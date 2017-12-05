@@ -1,5 +1,5 @@
 
-var input = [0,3,0,-3]; //document.body.innerText.trim().split("\n");
+var input = document.body.innerText.trim().split("\n").map(i => parseInt(i,10));
 var steps = 0;
 var i = 0;
 var length = input.length;
@@ -9,7 +9,7 @@ do {
     input[i]++;
     i+=jmp;
     steps++;
-    console.log(steps,i,jmp);
+    if ( steps % 1000 === 0 ) console.log(steps,i,jmp);
 } while ( i >= 0 && i < length );
 
 console.log(steps);
