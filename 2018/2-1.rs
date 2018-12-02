@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 const NEW_LINE : u8 = 10;
 
@@ -51,23 +51,39 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
-fn main()  {
-    let input = get_input("input-1", |s| s.parse::<i32>().unwrap());
-    let mut sum = 0;
-    let mut seen_hash = HashSet::new();
-    let mut found = false;
-    loop {
-        for line in &input {
-            sum += line;
-            if seen_hash.contains(&sum) {
-                found = true;
-                break;
-            }
-            seen_hash.insert(sum);
+
+fn main () {
+    let input = get_input("input-2", |s| s );
+    let mut threes = 0;
+    let mut twos = 0;
+    for string in input {
+        let chars = string.chars();
+        let mut char_count = HashMap::new();
+        for c in chars {
+            let cnt = if char_count.contains_key(&c) {
+                 char_count.get(&c).unwrap() + 1
+             } else { 
+                 1
+             };
+            char_count.insert(c,cnt);
         }
-        if found {
-            break;
+        let mut has_two = false;
+        let mut has_three = false;
+        for val in char_count.values() {
+            if *val == 2 {
+                has_two = true;
+            }
+            if *val == 3 {
+                has_three = true;
+            }
+        }
+        if has_two {
+            twos += 1;
+        }
+        if has_three {
+            threes += 1;
         }
     }
-    println!("Sum: {}",sum);
+    let res = twos * threes;
+    println!("Result: {}", res);
 }

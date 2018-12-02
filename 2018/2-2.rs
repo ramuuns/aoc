@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashSet;
+use std::collections::HashMap;
 
 const NEW_LINE : u8 = 10;
 
@@ -51,23 +52,41 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
-fn main()  {
-    let input = get_input("input-1", |s| s.parse::<i32>().unwrap());
-    let mut sum = 0;
-    let mut seen_hash = HashSet::new();
+
+fn main () {
+    let input = get_input("input-2", |s| s );
+    let mut candidates = HashSet::new();
+    let mut candidates_to_full = HashMap::new();
     let mut found = false;
-    loop {
-        for line in &input {
-            sum += line;
-            if seen_hash.contains(&sum) {
-                found = true;
-                break;
+    for string in input {
+        let l = string.len();
+        for i in 0..l {
+            let left_slice = if i == 0 {
+                "".to_string()
+            } else {
+                string.chars().take(i).collect()
+            };
+            let right_slice = if i == l-1 {
+                "".to_string()
+            } else {
+                string.chars().skip(i+1).take(l-(i+1)).collect()
+            };
+            let hash_key = format!("{}{}", left_slice,right_slice);
+            if candidates.contains(&hash_key) {
+                if string.starts_with(candidates_to_full.get(&hash_key).unwrap()) {
+                    //meh this is the same string, just with double letters
+                } else {
+                    println!("The common chars are: {}", hash_key);
+                
+                    found = true;
+                    break;
+                }
             }
-            seen_hash.insert(sum);
+            candidates.insert(hash_key.clone());
+            candidates_to_full.insert(hash_key.clone(),string.clone());
         }
         if found {
             break;
         }
     }
-    println!("Sum: {}",sum);
 }
