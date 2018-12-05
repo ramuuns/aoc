@@ -1,5 +1,8 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::thread;
+use std::sync::{Mutex, Arc};
+
 
 const NEW_LINE : u8 = 10;
 
@@ -80,15 +83,28 @@ fn do_reactions_skipping_letter( the_s: &Vec<u8>, c: u8) -> usize {
 
 fn main () {
     let input = get_input("input-5", |s| s);
-    let mut min = input[0].len();
+    let mut handles = vec![];
+    let min = Arc::new(Mutex::new(input[0].len()));
     // uppercase ascii charcodes...
     for c in 65u8..91 {
-        let m = do_reactions_skipping_letter(&input[0], c);
-        if m < min {
-            min = m;
-        }
+        let data : Vec<u8> = input[0].clone();
+        let min = Arc::clone(&min);
+        // Multithreading!!!!
+        let handle = thread::spawn(move || {
+            let m = do_reactions_skipping_letter(&data, c);
+            let mut minref = min.lock().unwrap();
+            if m < *minref {
+                *minref = m;
+            }
+        });
+        handles.push(handle);
+        
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
     }
 
 
-    println!("The result: {}", min );
+    println!("The result: {}", min.lock().unwrap() );
 }
