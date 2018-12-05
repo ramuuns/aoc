@@ -7,7 +7,7 @@ const NEW_LINE : u8 = 10;
     Read a file given by a filename and parse it to a vector of
     whatever we need given a line_transform function
 */
-fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
+fn get_input<T>(filename : &str, line_transform : fn(Vec<u8>) -> T) -> Vec<T> {
     let mut file = File::open(filename).expect("Cannot open file");
     let mut ret : Vec<T> = Vec::new();
     let mut vec_one_line = Vec::new();
@@ -20,17 +20,17 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
                     // If the file doesn't end on a new line, we'll have stuff
                     // in our "current line" vector, thus we need to parse it as well
                     if vec_one_line.len() > 0 {
-                        let s = String::from_utf8(vec_one_line.clone()).unwrap();
-                        ret.push(line_transform(s));
+                        //let s = String::from_utf8(vec_one_line.clone()).unwrap();
+                        ret.push(line_transform(vec_one_line.clone()));
                     }
                     break;
                 }
 
                 for b in buf.iter() {
                     if *b == NEW_LINE {
-                        let s = String::from_utf8(vec_one_line.clone()).unwrap();
+                        //let s = String::from_utf8(vec_one_line.clone()).unwrap();
+                        ret.push(line_transform(vec_one_line.clone()));
                         vec_one_line.clear();
-                        ret.push(line_transform(s));
                     } else {
                         // deal with null bytes, that are in the buffer ('cause it's fixed size), when
                         // we're at the end of the file. Since we're reading a text file those shouldn't be in
@@ -51,42 +51,28 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 }
 
 
-fn do_reactions_skipping_letter( s: &String, c: char) -> usize {
-    let mut the_s : Vec<char> = s.chars().collect();
-    let mut len = the_s.len();
-    let mut i : usize = 0;
-    loop {
-        if i == len {
-            break;
+fn do_reactions_skipping_letter( the_s: &Vec<u8>, c: u8) -> usize {
+    
+    let mut stack : [u8;50000] = [0;50000]; // we know the max input size, so what the hell, it won't be bigger than that
+    let mut len : usize = 0;
+    for i in 0..the_s.len() {
+        // compare case insensitive 
+        // essentially we first cast it to upper case (the & 0b01011111)
+        // and then we compare it to our upper case character
+        if the_s[i] & 0b01011111 == c {
+            continue;
         }
-        if the_s[i].to_ascii_lowercase() == c {
-            the_s.remove(i);
-            len -= 1;
-        } else {
-            i += 1;
-        }
-    }
-    let mut still_can_remove = true;
-    while still_can_remove {
-        
-        let mut did_remove = false;
-        let mut i : usize = 1;
-        loop {
-            if i == len {
-                break;
-            }
-            if i > 0 && the_s[i-1].to_ascii_lowercase() == the_s[i].to_ascii_lowercase() && the_s[i-1] != the_s[i] {
-                the_s.remove(i);
-                the_s.remove(i-1);
-                i -= 1;
-                len -= 2;
-                did_remove = true;
+        if len > 0 {
+            let c = stack[len - 1];
+            if c & 0b01011111 == the_s[i] & 0b01011111 && c != the_s[i] {
+                len -= 1; // just decrement the stack pointer and don't bother with the actual value in the stack
             } else {
-                i += 1;
+                stack[len] = the_s[i];
+                len += 1;
             }
-        }
-        if !did_remove {
-            still_can_remove = false;
+        } else {
+            stack[len] = the_s[i];
+            len += 1;
         }
     }
     return len;
@@ -95,11 +81,10 @@ fn do_reactions_skipping_letter( s: &String, c: char) -> usize {
 fn main () {
     let input = get_input("input-5", |s| s);
     let mut min = input[0].len();
-    // lowercase ascii charcodes...
-    for c in 97u8..123 {
-        let m = do_reactions_skipping_letter(&input[0], c as char);
+    // uppercase ascii charcodes...
+    for c in 65u8..91 {
+        let m = do_reactions_skipping_letter(&input[0], c);
         if m < min {
-            println!("New min: {}", m);
             min = m;
         }
     }
