@@ -70,12 +70,6 @@ fn line_to_coords(s :String ) -> Point {
     return Point{ x: coords[0], y: coords[1] };
 }
 
-#[derive (Clone, Copy)]
-struct PointOnGrid{
-    nearest_id : usize,
-    distance : usize,
-}
-
 const FAKEID : usize = 1024;
 
 fn main () {
@@ -100,37 +94,30 @@ fn main () {
         }
     }
 
-    let a_point = PointOnGrid{nearest_id:FAKEID,distance:1000};
-
-    let mut grid  = vec![vec![a_point;maxy+1-miny];maxx+1-minx];
-
-    for y in 0..maxy-miny+1 {
-        for x in 0..maxx-minx+1 {
-            for i in 0..input.len() {
-                let pointx = input[i].x-minx;
-                let pointy = input[i].y-miny;
-                let d = manhattan_distance(x,y, pointx,pointy);
-                if d < grid[x][y].distance {
-                    grid[x][y].distance = d;
-                    grid[x][y].nearest_id = i;
-                } else if d == grid[x][y].distance {
-                    grid[x][y].nearest_id = FAKEID;
-                }
-            }
-        }
-    }
-
     let mut infinite = HashSet::new();
     let mut sizes_by_id : HashMap<usize,usize> = HashMap::new();
-    for y in 0..maxy-miny+1 {
-        for x in 0..maxx-minx+1 {
-            let id = grid[x][y].nearest_id;
+
+    for y in 0..maxy+1 {
+        for x in 0..maxx+1 {
+            let mut id = FAKEID;
+            let mut min_d = 100000;
+            for i in 0..input.len() {
+                let pointx = input[i].x;
+                let pointy = input[i].y;
+                let d = manhattan_distance(x,y, pointx,pointy);
+                if d < min_d {
+                    min_d = d;
+                    id = i;
+                } else if d == min_d {
+                    id = FAKEID;
+                }
+            }
 
             if id == FAKEID {
                 continue;
             }
             
-            if x == 0 || y == 0 || x == maxx-minx || y == maxy-miny {
+            if x == minx || y == miny || x == maxx || y == maxy {
                 infinite.insert(id);
                 sizes_by_id.remove(&id);
                 continue;
@@ -140,6 +127,7 @@ fn main () {
                     *cnt += 1;
                 }
             }
+
         }
     }
 
