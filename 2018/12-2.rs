@@ -97,9 +97,12 @@ fn main () {
 
     let maxgen:u64 = 50000000000;
 
+    let mut prevsum : i128 = 0;
+
     for g in 0..maxgen {
-        if g % 500000000 == 0 && g > 0 {
-            println!("{}%", g/500000000);
+        if g > 120 {
+            prevsum += (maxgen as i128 - g as i128)*42;;
+            break;
         }
         let mut newstate : BTreeSet<i64> = BTreeSet::new();
         let mut rule = 0;
@@ -157,16 +160,20 @@ fn main () {
         }
 
         //println!("min: {}, max: {}", min, max);
+
+        let mut s = 0;
+        for k in newstate.clone() {
+            s += k;
+        }
+        
+        //println!("gen : {} diff: {}", g, s - prevsum);
+        prevsum = s as i128;
         
         state = newstate;
     }
     
-    let mut s = 0;
-    for k in state {
-        s += k;
-    }
     
-    println!("index sum: {}", s);
+    println!("index sum: {}", prevsum);
 
 }
 
