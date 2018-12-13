@@ -138,26 +138,21 @@ fn main () {
         y += 1;
     }
 
-    let mut crashx = 0;
-    let mut crashy = 0;
+    let mut lastx = 0;
+    let mut lasty = 0;
 
     loop {
         let mut newcarts : BTreeMap<(usize,usize),Cart> = BTreeMap::new();
-        let mut did_crash = false;
         for ((yy,xx), mut c) in carts {
             if newcarts.contains_key(&(yy,xx)) {
-                did_crash = true;
-                crashx = xx;
-                crashy = yy;
-                break;
+                newcarts.remove(&(yy,xx));
+                continue;
             }
             let x = (xx as isize + c.dirx as isize) as usize;
             let y = (yy as isize + c.diry as isize) as usize;
             if newcarts.contains_key(&(y,x)) {
-                did_crash = true;
-                crashx = x;
-                crashy = y;
-                break;
+                newcarts.remove(&(y,x));
+                continue;
             }
             let g = grid[y][x];
             if g == '/' {
@@ -198,12 +193,17 @@ fn main () {
             }
             newcarts.insert((y,x),c);
         }
-        if did_crash {
+        if newcarts.len() == 1 {
+            for ((y,x), _) in newcarts {
+                lastx = x;
+                lasty = y;
+            }
             break;
         }
         carts = newcarts;
+        
     }
     
-    println!("crash: {},{}", crashx,crashy);
+    println!("crash: {},{}", lastx,lasty);
 
 }
