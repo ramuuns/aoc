@@ -52,10 +52,10 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
-fn print_state(clay : HashSet<(usize,usize)>, water: HashSet<(usize,usize)>, minx: usize, miny :usize, maxx :usize, maxy: usize ) {
+fn print_state(clay : HashSet<(usize,usize)>, water: HashSet<(usize,usize)>, still_water : HashSet<(usize,usize)>, minx: usize, miny :usize, maxx :usize, maxy: usize ) {
     for y in miny..=maxy {
         for x in minx..=maxx {
-            let c = if clay.contains(&(y,x)) { '#' } else if water.contains(&(y,x)) { '~' } else { '.' };
+            let c = if clay.contains(&(y,x)) { '#' } else if still_water.contains(&(y,x)) { '~' } else if water.contains(&(y,x)) { '|' } else { '.' };
             print!("{}",c);
         }
         println!("");
@@ -118,6 +118,7 @@ fn main () {
     }
 
     let mut water_set : HashSet<(usize,usize)> = HashSet::new();
+    let mut still_water_set : HashSet<(usize,usize)> = HashSet::new();
 
     let mut water_stack : Vec<(usize,usize)> = Vec::new();
 
@@ -133,11 +134,11 @@ fn main () {
     let mut ws_maxy = 0usize;
     
     loop {
-        /*
-        if water_set.len() > 0 {
+        
+        /*if water_set.len() > 0 {
         //    if iterations > 1000 && (iterations %100 == 99 || iterations %100 == 98 || iterations %100 == 97) {
                 println!("iter: {}", iterations);
-                print_state(clay.clone(), water_set.clone(),ws_minx-1,ws_miny-1,ws_maxx+1,ws_maxy+1);
+                print_state(clay.clone(), water_set.clone(), still_water_set.clone(),ws_minx-1,ws_miny-1,ws_maxx+1,ws_maxy+1);
                 let mut cstack = water_stack.clone();
                 print!("stack: ");
                 for i in 0..4 {
@@ -213,13 +214,15 @@ fn main () {
             loop {
                 let (y,x) = water_stack.pop().unwrap();
                 let mut x1 = x;
+                let mut r_minx = x;
+                let mut r_maxx = x;
                 
                 loop {
-                    x1 -= 1;
                     if clay.contains(&(y,x1)) {
                         break;
                     }
                     water_set.insert((y,x1));
+                    still_water_set.insert((y,x1));
                     if y < ws_miny {
                         ws_miny = y;
                     }
@@ -237,14 +240,18 @@ fn main () {
                         did_overflow = true;
                         break;
                     }
+                    x1 -= 1;
+                    r_minx-=1;
+                    
                 }
                 x1 = x;
                 loop {
-                    x1 += 1;
+                    
                     if clay.contains(&(y,x1)) {
                         break;
                     }
                     water_set.insert((y,x1));
+                    still_water_set.insert((y,x1));
                     if y < ws_miny {
                         ws_miny = y;
                     }
@@ -262,9 +269,14 @@ fn main () {
                         did_overflow = true;
                         break;
                     }
+                    x1 += 1;
+                    r_maxx+=1;
                 }
 
-                if did_overflow { 
+                if did_overflow {
+                    for xx in r_minx..=r_maxx {
+                        still_water_set.remove(&(y,xx));
+                    }
                     break;
                 }
             }
@@ -295,7 +307,7 @@ fn main () {
         }
     }
 
-    println!("water set size: {}", water_set.len());
+    println!("water set size: {}", still_water_set.len());
 
     println!("minx, maxx:  {},{}", minx,maxx);
     println!("miny, maxy:  {},{}", miny,maxy);
