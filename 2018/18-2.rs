@@ -51,16 +51,6 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
-fn print_state(grid : &Vec<Vec<char>>, maxx :usize, maxy: usize ) {
-    for y in 0..maxy {
-        for x in 0..maxx {
-            print!("{}",grid[y][x]);
-        }
-        println!("");
-    }
-    println!("");
-}
-
 fn main () {
     let input = get_input("input-18", |s| s );
 
@@ -75,22 +65,17 @@ fn main () {
         grid.push(l);
     }
 
-    //1000000000
-
     let mut cycle_start = 0usize;
     let mut last_seen_at : HashMap<(u16,u16),usize> = HashMap::new();
     let mut at_end_of_each : Vec<(u16,u16)> = Vec::new();
-
-    let mut cnt_lumber = 0;
-    let mut cnt_trees = 0;
-
+    
     let mut cycle_size = 0;
 
     let mut maybe_a_loop = false;
     
 
     for i in 0..10000 {
-        //print_state(&grid,maxx,maxy);
+        
         let mut newgrid : Vec<Vec<char>> = Vec::new();
         for y in 0..maxy {
             let mut newline : Vec<char> = Vec::new();
@@ -142,28 +127,10 @@ fn main () {
                 }
             }
         }
-// 0 1 2 3 4 5 6 7 8 9 10
-// 0 3 4 5 6 4 5 6 4 5 6  4 5 6 4 5 6 4 5 6 4
-//     
-// cs == 2
-// i = 5
-// cycle_size = 3
-
-// i = 6
-// value = 5
-
-// 20 - cycle_start 
-// 18 18%cycle_size 0
-// at_end_of_eahc[cycle_start + 0] 2 == 4
-
-// i = 8
-
-// i - 2*cycle_size == cycle_start
 
         at_end_of_each.push((cnt_lumber,cnt_trees));
         if !maybe_a_loop {
             if last_seen_at.contains_key(&(cnt_lumber,cnt_trees)) {
-                //hmmm
                 cycle_start = *last_seen_at.get(&(cnt_lumber,cnt_trees)).unwrap();
                 cycle_size = i - cycle_start;
                 maybe_a_loop = true;
@@ -179,16 +146,17 @@ fn main () {
             }
         }
         last_seen_at.insert((cnt_lumber,cnt_trees),i);
-        println!("{}, {} {}", i, cnt_lumber, cnt_trees);
 
     }
 
-    let offset = (1000000000 - cycle_start) % cycle_size;
+    let offset = (1000000000 - 1 - cycle_start) % cycle_size;
     let (cnt_lumber, cnt_trees) = at_end_of_each[cycle_start+offset];
     println!("cycle start :{}, size: {}", cycle_start,cycle_size);
 
-    println!("result : {}x{}={}", cnt_lumber, cnt_trees, cnt_lumber*cnt_trees);
+    let res : u64 = cnt_lumber as u64 * cnt_trees as u64;
 
+    println!("result : {}x{}, {}", cnt_lumber, cnt_trees, res );
+//
 
 }
 

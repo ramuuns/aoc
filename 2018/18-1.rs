@@ -50,6 +50,7 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
+/*
 fn print_state(grid : &Vec<Vec<char>>, maxx :usize, maxy: usize ) {
     for y in 0..maxy {
         for x in 0..maxx {
@@ -59,6 +60,7 @@ fn print_state(grid : &Vec<Vec<char>>, maxx :usize, maxy: usize ) {
     }
     println!("");
 }
+*/
 
 fn main () {
     let input = get_input("input-18", |s| s );
