@@ -1,0 +1,58 @@
+package main
+
+import(
+	"fmt"
+	"io/ioutil"
+	"strings"
+	"strconv"
+)
+
+func main() {
+	input, err := ioutil.ReadFile("input-02")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	input_as_str := string(input)
+	string_data := strings.Split(input_as_str,",")
+	var orig_int_data = make([]int, len(string_data))
+	for i, s := range(string_data) {
+		s = strings.TrimSpace(s)
+		int_val, err := strconv.Atoi(s)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		orig_int_data[i] = int_val
+	}
+
+	var k,l int
+
+	for k =0; k < 99; k++ {
+		for l = 0; l < 99; l++ {
+
+			int_data := make([]int, len(orig_int_data))
+			copy (int_data, orig_int_data)
+
+			int_data[1] = k
+			int_data[2] = l
+
+			for i := 0; int_data[i] != 99; i+= 4 {
+				var opcode = int_data[i];
+				var val1 = int_data[int_data[i+1]]
+				var val2 = int_data[int_data[i+2]]
+				var dst = int_data[i+3]
+				switch opcode {
+				case 1:
+					int_data[dst] = val1+val2
+				case 2:
+					int_data[dst] = val1*val2
+				}
+			}
+			if int_data[0] == 19690720 {
+				fmt.Println(k*100 + l)
+				return
+			}
+		}
+	}
+}
