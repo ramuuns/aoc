@@ -14,6 +14,8 @@ type HLine struct {
 	start int
 	end int
 	steps int
+    min int
+    max int
 }
 
 type VLine struct {
@@ -21,6 +23,8 @@ type VLine struct {
 	start int
 	end int
 	steps int
+    min int
+    max int
 }
 
 func Abs(x int) int {
@@ -56,19 +60,19 @@ func main() {
 		}
 		switch dir {
 		case "U":
-			line := VLine{x: x, start: y, end: y+len_as_int, steps: steps}
+			line := VLine{x: x, start: y, end: y+len_as_int, min:y, max: y+len_as_int, steps: steps}
 			vlines = append(vlines, line)
 			y+=len_as_int
 		case "D":
-			line := VLine{x: x, start: y-len_as_int, end: y, steps: steps}
+			line := VLine{x: x, start: y, end: y-len_as_int, min: y-len_as_int, max: y, steps: steps}
             vlines = append(vlines, line)
             y-=len_as_int
 		case "R":
-			line := HLine{y: y, start: x, end: x+len_as_int, steps: steps}
+			line := HLine{y: y, start: x, end: x+len_as_int, min: x, max: x+len_as_int, steps: steps}
             hlines = append(hlines, line)
             x+=len_as_int
 		case "L":
-			line := HLine{y: y, start: x-len_as_int, end: x, steps: steps}
+			line := HLine{y: y, start: x, end: x-len_as_int, min: x-len_as_int, max: x, steps: steps}
             hlines = append(hlines, line)
             x-=len_as_int
 		}
@@ -99,8 +103,8 @@ func main() {
 				if hline.y > y + len_as_int {
 					break
 				} else if hline.y >= y && hline.y <= y+len_as_int {
-					if hline.start <= x && hline.end >= x && x != 0 && hline.y != 0 {
-						dist := steps + (hline.y - y) + hline.steps + (x - hline.start)
+					if hline.min <= x && hline.max >= x && x != 0 && hline.y != 0 {
+						dist := steps + (hline.y - y) + hline.steps + Abs(x - hline.start)
 						if closest == -1 || dist < closest {
 							closest = dist
 						}
@@ -113,8 +117,8 @@ func main() {
                 if hline.y > y {
                     break
                 } else if hline.y <= y && hline.y >= y-len_as_int {
-                    if hline.start <= x && hline.end >= x && x != 0 && hline.y != 0  {
-						dist := steps + (y - hline.y) + hline.steps + (x - hline.start)
+                    if hline.min <= x && hline.max >= x && x != 0 && hline.y != 0  {
+						dist := steps + (y - hline.y) + hline.steps + Abs(x - hline.start)
                         if closest == -1 || dist < closest {
                             closest = dist
                         }
@@ -127,8 +131,8 @@ func main() {
                 if vline.x > x + len_as_int {
                     break
                 } else if vline.x >= x && vline.x <= x+len_as_int {
-                    if vline.start <= y && vline.end >= y && y != 0 && vline.x != 0 {
-						dist := steps + (vline.x - x) + vline.steps + (y - vline.start)
+                    if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
+						dist := steps + (vline.x - x) + vline.steps + Abs(y - vline.start)
                         if closest == -1 || dist < closest {
                             closest = dist
                         }
@@ -141,8 +145,8 @@ func main() {
                 if vline.x > x {
                     break
                 } else if vline.x <= x && vline.x >= x-len_as_int {
-                    if vline.start <= y && vline.end >= y && y != 0 && vline.x != 0 {
-                        dist := steps + (x - vline.x) + vline.steps + (y - vline.start)
+                    if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
+                        dist := steps + (x - vline.x) + vline.steps + Abs(y - vline.start)
                         if closest == -1 || dist < closest {
                             closest = dist
                         }
