@@ -8,13 +8,13 @@ import (
 
 func main() {
 	input, err := ioutil.ReadFile("input-06")
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	orbits := strings.Split(string(input), "\n")
 	reverse_map := make(map[string]string)
-	for _, orbit := range(orbits) {
+	for _, orbit := range orbits {
 		if orbit == "" {
 			continue
 		}
@@ -23,7 +23,7 @@ func main() {
 	}
 
 	my_jumps := make(map[string]int)
-	k := "YOU";
+	k := "YOU"
 	dist := 0
 	for {
 		my_jumps[k] = dist
@@ -42,9 +42,9 @@ func main() {
 		dist++
 		my_dist, ok := my_jumps[k]
 		if ok {
-			dist+= my_dist
+			dist += my_dist
 			break
 		}
 	}
-	fmt.Println(dist-2)
+	fmt.Println(dist - 2)
 }

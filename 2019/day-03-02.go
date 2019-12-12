@@ -1,30 +1,29 @@
 package main
-  
-import(
-    "fmt"
-    "io/ioutil"
-    "strings"
-    "strconv"
+
+import (
+	"fmt"
+	"io/ioutil"
 	"sort"
+	"strconv"
+	"strings"
 )
 
-
 type HLine struct {
-	y int
+	y     int
 	start int
-	end int
+	end   int
 	steps int
-    min int
-    max int
+	min   int
+	max   int
 }
 
 type VLine struct {
-	x int
+	x     int
 	start int
-	end int
+	end   int
 	steps int
-    min int
-    max int
+	min   int
+	max   int
 }
 
 func Abs(x int) int {
@@ -35,21 +34,21 @@ func Abs(x int) int {
 }
 
 func main() {
-    input, err := ioutil.ReadFile("input-03")
-    if err != nil {
-        fmt.Println(err)
-        return
-    }
-    input_as_str := string(input)
+	input, err := ioutil.ReadFile("input-03")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	input_as_str := string(input)
 	lines := strings.Split(input_as_str, "\n")
-	wire1 := strings.Split(lines[0],",")
-	wire2 := strings.Split(lines[1],",")
+	wire1 := strings.Split(lines[0], ",")
+	wire2 := strings.Split(lines[1], ",")
 	var x int
 	var y int
 	var steps int
 	var hlines []HLine
 	var vlines []VLine
-	for _, segment := range(wire1) {
+	for _, segment := range wire1 {
 		runes := []rune(segment)
 		dir := string(runes[0:1])
 		len_as_str := string(runes[1:])
@@ -60,51 +59,51 @@ func main() {
 		}
 		switch dir {
 		case "U":
-			line := VLine{x: x, start: y, end: y+len_as_int, min:y, max: y+len_as_int, steps: steps}
+			line := VLine{x: x, start: y, end: y + len_as_int, min: y, max: y + len_as_int, steps: steps}
 			vlines = append(vlines, line)
-			y+=len_as_int
+			y += len_as_int
 		case "D":
-			line := VLine{x: x, start: y, end: y-len_as_int, min: y-len_as_int, max: y, steps: steps}
-            vlines = append(vlines, line)
-            y-=len_as_int
+			line := VLine{x: x, start: y, end: y - len_as_int, min: y - len_as_int, max: y, steps: steps}
+			vlines = append(vlines, line)
+			y -= len_as_int
 		case "R":
-			line := HLine{y: y, start: x, end: x+len_as_int, min: x, max: x+len_as_int, steps: steps}
-            hlines = append(hlines, line)
-            x+=len_as_int
+			line := HLine{y: y, start: x, end: x + len_as_int, min: x, max: x + len_as_int, steps: steps}
+			hlines = append(hlines, line)
+			x += len_as_int
 		case "L":
-			line := HLine{y: y, start: x, end: x-len_as_int, min: x-len_as_int, max: x, steps: steps}
-            hlines = append(hlines, line)
-            x-=len_as_int
+			line := HLine{y: y, start: x, end: x - len_as_int, min: x - len_as_int, max: x, steps: steps}
+			hlines = append(hlines, line)
+			x -= len_as_int
 		}
-		steps+=len_as_int
+		steps += len_as_int
 	}
 	x = 0
 	y = 0
 	steps = 0
 	closest := -1
-	sort.Slice(hlines, func(i,j int) bool {
+	sort.Slice(hlines, func(i, j int) bool {
 		return hlines[i].y < hlines[j].y
 	})
-	sort.Slice(vlines, func(i,j int) bool {
-        return vlines[i].x < vlines[j].x
-    })
-	for _, segment := range(wire2) {
-        runes := []rune(segment)
+	sort.Slice(vlines, func(i, j int) bool {
+		return vlines[i].x < vlines[j].x
+	})
+	for _, segment := range wire2 {
+		runes := []rune(segment)
 		dir := string(runes[0:1])
 		len_as_str := string(runes[1:])
-        len_as_int, err := strconv.Atoi(len_as_str)
+		len_as_int, err := strconv.Atoi(len_as_str)
 		if err != nil {
-            fmt.Println(err)
-            return
-        }
+			fmt.Println(err)
+			return
+		}
 		switch dir {
-        case "U":
-			for _, hline := range(hlines) {
-				if hline.y > y + len_as_int {
+		case "U":
+			for _, hline := range hlines {
+				if hline.y > y+len_as_int {
 					break
 				} else if hline.y >= y && hline.y <= y+len_as_int {
 					if hline.min <= x && hline.max >= x && x != 0 && hline.y != 0 {
-						dist := steps + (hline.y - y) + hline.steps + Abs(x - hline.start)
+						dist := steps + (hline.y - y) + hline.steps + Abs(x-hline.start)
 						if closest == -1 || dist < closest {
 							closest = dist
 						}
@@ -113,47 +112,47 @@ func main() {
 			}
 			y += len_as_int
 		case "D":
-			for _, hline := range(hlines) {
-                if hline.y > y {
-                    break
-                } else if hline.y <= y && hline.y >= y-len_as_int {
-                    if hline.min <= x && hline.max >= x && x != 0 && hline.y != 0  {
-						dist := steps + (y - hline.y) + hline.steps + Abs(x - hline.start)
-                        if closest == -1 || dist < closest {
-                            closest = dist
-                        }
-                    }
-                }
-            }
+			for _, hline := range hlines {
+				if hline.y > y {
+					break
+				} else if hline.y <= y && hline.y >= y-len_as_int {
+					if hline.min <= x && hline.max >= x && x != 0 && hline.y != 0 {
+						dist := steps + (y - hline.y) + hline.steps + Abs(x-hline.start)
+						if closest == -1 || dist < closest {
+							closest = dist
+						}
+					}
+				}
+			}
 			y -= len_as_int
 		case "R":
-			for _, vline := range(vlines) {
-                if vline.x > x + len_as_int {
-                    break
-                } else if vline.x >= x && vline.x <= x+len_as_int {
-                    if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
-						dist := steps + (vline.x - x) + vline.steps + Abs(y - vline.start)
-                        if closest == -1 || dist < closest {
-                            closest = dist
-                        }
-                    }
-                }
-            }
-            x += len_as_int
+			for _, vline := range vlines {
+				if vline.x > x+len_as_int {
+					break
+				} else if vline.x >= x && vline.x <= x+len_as_int {
+					if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
+						dist := steps + (vline.x - x) + vline.steps + Abs(y-vline.start)
+						if closest == -1 || dist < closest {
+							closest = dist
+						}
+					}
+				}
+			}
+			x += len_as_int
 		case "L":
-			for _, vline := range(vlines) {
-                if vline.x > x {
-                    break
-                } else if vline.x <= x && vline.x >= x-len_as_int {
-                    if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
-                        dist := steps + (x - vline.x) + vline.steps + Abs(y - vline.start)
-                        if closest == -1 || dist < closest {
-                            closest = dist
-                        }
-                    }
-                }
-            }
-            x -= len_as_int
+			for _, vline := range vlines {
+				if vline.x > x {
+					break
+				} else if vline.x <= x && vline.x >= x-len_as_int {
+					if vline.min <= y && vline.max >= y && y != 0 && vline.x != 0 {
+						dist := steps + (x - vline.x) + vline.steps + Abs(y-vline.start)
+						if closest == -1 || dist < closest {
+							closest = dist
+						}
+					}
+				}
+			}
+			x -= len_as_int
 		}
 		steps += len_as_int
 	}
