@@ -124,18 +124,17 @@ func main() {
 		}
 		if !hasLoopY {
 			if moons[0].vel.y == 0 && moons[1].vel.y == 0 && moons[2].vel.y == 0 && moons[3].vel.y == 0 {
-                loopY = i
-                hasLoopY = true
-            }
+				loopY = i
+				hasLoopY = true
+			}
 		}
 		if !hasLoopZ {
 			if moons[0].vel.z == 0 && moons[1].vel.z == 0 && moons[2].vel.z == 0 && moons[3].vel.z == 0 {
-                loopZ = i
-                hasLoopZ = true
-            }
+				loopZ = i
+				hasLoopZ = true
+			}
 		}
 	}
 
-
-	fmt.Println(Lcm3(loopX, loopY, loopZ)*2)
+	fmt.Println(Lcm3(loopX, loopY, loopZ) * 2)
 }
