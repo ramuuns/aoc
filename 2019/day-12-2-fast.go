@@ -27,33 +27,57 @@ func Abs(n int) int {
 	return n
 }
 
-func (m *Moon) updateVel(moons []Moon) {
+func (m *Moon) updateVel(moons []Moon, updateX, updateY, updateZ bool) {
 	for _, other := range moons {
 		if m.id == other.id {
 			continue
 		}
-		dx := other.pos.x - m.pos.x
-		dy := other.pos.y - m.pos.y
-		dz := other.pos.z - m.pos.z
-		if dx != 0 {
-			dx = dx / Abs(dx)
+		if updateX {
+			dx := other.pos.x - m.pos.x
+			if dx != 0 {
+				if dx < 0 {
+					dx = -1
+				} else {
+					dx = 1
+				}
+			}
+			m.vel.x += dx
 		}
-		if dy != 0 {
-			dy = dy / Abs(dy)
+		if updateY {
+			dy := other.pos.y - m.pos.y
+			if dy != 0 {
+				if dy < 0 {
+					dy = -1
+				} else {
+					dy = 1
+				}
+			}
+			m.vel.y += dy
 		}
-		if dz != 0 {
-			dz = dz / Abs(dz)
+		if updateZ {
+			dz := other.pos.z - m.pos.z
+			if dz != 0 {
+				if dz < 0 {
+					dz = -1
+				} else {
+					dz = 1
+				}
+			}
+			m.vel.z += dz
 		}
-		m.vel.x += dx
-		m.vel.y += dy
-		m.vel.z += dz
 	}
 }
 
-func (m *Moon) updatePos() {
-	m.pos.x += m.vel.x
-	m.pos.y += m.vel.y
-	m.pos.z += m.vel.z
+func (m *Moon) updatePos(updateX, updateY, updateZ bool) {
+	if updateX {
+		m.pos.x += m.vel.x
+	}
+	if updateY {
+		m.pos.y += m.vel.y
+	}
+	if updateZ {
+		m.pos.z += m.vel.z
+	}
 }
 
 func (m Moon) energy() int {
@@ -66,7 +90,10 @@ func Gcd(x, y int) int {
 	if y == 0 {
 		return x
 	}
-	return Gcd(y, x%y)
+	for y != 0 {
+		x, y = y, x%y
+	}
+	return x
 }
 
 func Lcm3(x, y, z int) int {
@@ -106,35 +133,32 @@ func main() {
 	loopY := 0
 	loopZ := 0
 
-	for i := 0; i < 10000000; i++ {
-		if hasLoopX && hasLoopY && hasLoopZ {
-			break
+	for i := 0; !hasLoopX || !hasLoopY || !hasLoopZ; i++ {
+		for k, _ := range moons {
+			moons[k].updateVel(moons, !hasLoopX, !hasLoopY, !hasLoopZ)
 		}
 		for k, _ := range moons {
-			moons[k].updateVel(moons)
-		}
-		for k, _ := range moons {
-			moons[k].updatePos()
+			moons[k].updatePos(!hasLoopX, !hasLoopY, !hasLoopZ)
 		}
 		if !hasLoopX {
-			if moons[0].vel.x == 0 && moons[1].vel.x == 0 && moons[2].vel.x == 0 && moons[3].vel.x == 0 {
+			if moons[0].vel.x|moons[1].vel.x|moons[2].vel.x|moons[3].vel.x == 0 {
 				loopX = i
 				hasLoopX = true
 			}
 		}
 		if !hasLoopY {
-			if moons[0].vel.y == 0 && moons[1].vel.y == 0 && moons[2].vel.y == 0 && moons[3].vel.y == 0 {
+			if moons[0].vel.y|moons[1].vel.y|moons[2].vel.y|moons[3].vel.y == 0 {
 				loopY = i
 				hasLoopY = true
 			}
 		}
 		if !hasLoopZ {
-			if moons[0].vel.z == 0 && moons[1].vel.z == 0 && moons[2].vel.z == 0 && moons[3].vel.z == 0 {
+			if moons[0].vel.z|moons[1].vel.z|moons[2].vel.z|moons[3].vel.z == 0 {
 				loopZ = i
 				hasLoopZ = true
 			}
 		}
 	}
 
-	fmt.Println(Lcm3(loopX, loopY, loopZ) * 2)
+	fmt.Println(Lcm3(loopX, loopY, loopZ) << 1)
 }
