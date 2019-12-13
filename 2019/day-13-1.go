@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
 )
 
 func get_param(idx, mode int, data map[int]int, mode_base int) int {
@@ -74,12 +74,12 @@ func run_program(data map[int]int, io map[Point]int) map[Point]int {
 			ip += 4
 		case 3:
 			fmt.Print(">")
-            text, _ := reader.ReadString('\n')
-            int_val, err := strconv.Atoi(strings.TrimSpace(text))
-            if err != nil {
-                fmt.Println(err)
-                return io
-            }
+			text, _ := reader.ReadString('\n')
+			int_val, err := strconv.Atoi(strings.TrimSpace(text))
+			if err != nil {
+				fmt.Println(err)
+				return io
+			}
 			var dst = get_dest_param(ip+1, p1_mode, data, mode_base)
 			data[dst] = int_val
 			ip += 2
@@ -91,9 +91,9 @@ func run_program(data map[int]int, io map[Point]int) map[Point]int {
 			case 1:
 				y = val1
 			case 2:
-				io[Point{x,y}] = val1
+				io[Point{x, y}] = val1
 			}
-			output_mode = (output_mode+1) % 3
+			output_mode = (output_mode + 1) % 3
 			ip += 2
 		case 5:
 			var val1 = get_param(ip+1, p1_mode, data, mode_base)
@@ -161,10 +161,10 @@ func main() {
 	io := make(map[Point]int)
 
 	io = run_program(orig_int_data, io)
-	
+
 	block_count := 0
 	for _, val := range io {
-		if val == 2  {
+		if val == 2 {
 			block_count++
 		}
 	}

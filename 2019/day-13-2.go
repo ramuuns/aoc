@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
+	//	"os"
+	//	"bufio"
 )
 
 func get_param(idx, mode int, data map[int]int, mode_base int) int {
@@ -45,33 +45,33 @@ type Point struct {
 
 func draw_game(io map[Point]int) {
 	miny := 0
-    minx := 0
-    maxy := 0
-    maxx := 0
+	minx := 0
+	maxy := 0
+	maxx := 0
 
-    for p, _ := range io {
-        if p.x < minx {
-            minx = p.x
-        }
-        if p.y < miny {
-            miny = p.y
-        }
-        if p.x > maxx {
-            maxx = p.x
-        }
-        if p.y > maxy {
-            maxy = p.y
-        }
-    }
+	for p, _ := range io {
+		if p.x < minx {
+			minx = p.x
+		}
+		if p.y < miny {
+			miny = p.y
+		}
+		if p.x > maxx {
+			maxx = p.x
+		}
+		if p.y > maxy {
+			maxy = p.y
+		}
+	}
 
-    offsetx := -minx
-    offsety := -miny
-    sizex := maxx - minx
-    sizey := maxy - miny
+	offsetx := -minx
+	offsety := -miny
+	sizex := maxx - minx
+	sizey := maxy - miny
 
-    for y := 0; y < sizey; y++ {
-        for x := 0; x < sizex + 1; x++ {
-            to_draw := io[Point{x - offsetx, y - offsety}]
+	for y := 0; y < sizey; y++ {
+		for x := 0; x < sizex+1; x++ {
+			to_draw := io[Point{x - offsetx, y - offsety}]
 			switch to_draw {
 			case 0:
 				fmt.Print(" ")
@@ -84,9 +84,9 @@ func draw_game(io map[Point]int) {
 			case 4:
 				fmt.Print("*")
 			}
-        }
-        fmt.Println()
-    }
+		}
+		fmt.Println()
+	}
 
 }
 
@@ -99,7 +99,7 @@ func run_program(data map[int]int, io map[Point]int) map[Point]int {
 
 	ballX := 0
 	paddleX := 0
-	reader := bufio.NewReader(os.Stdin)
+	//reader := bufio.NewReader(os.Stdin)
 
 	output_mode := 0
 
@@ -123,13 +123,19 @@ func run_program(data map[int]int, io map[Point]int) map[Point]int {
 			ip += 4
 		case 3:
 			draw_game(io)
-			fmt.Print(">")
-            text, _ := reader.ReadString('\n')
-            int_val, err := strconv.Atoi(strings.TrimSpace(text))
-            if err != nil {
-                fmt.Println(err)
-                return io
-            }
+			int_val := 0
+			if paddleX > ballX {
+				int_val = -1
+			} else if paddleX < ballX {
+				int_val = 1
+			}
+			//fmt.Print(">")
+			//text, _ := reader.ReadString('\n')
+			//int_val, err := strconv.Atoi(strings.TrimSpace(text))
+			//if err != nil {
+			//    fmt.Println(err)
+			//    return io
+			//}
 			var dst = get_dest_param(ip+1, p1_mode, data, mode_base)
 			data[dst] = int_val
 			ip += 2
@@ -141,13 +147,18 @@ func run_program(data map[int]int, io map[Point]int) map[Point]int {
 			case 1:
 				y = val1
 			case 2:
-				if x == -1  && y == 0 {
-					fmt.Println("Score: ",val1)
+				if x == -1 && y == 0 {
+					fmt.Println("Score: ", val1)
 				} else {
-					io[Point{x,y}] = val1
+					io[Point{x, y}] = val1
+					if val1 == 3 {
+						paddleX = x
+					} else if val1 == 4 {
+						ballX = x
+					}
 				}
 			}
-			output_mode = (output_mode+1) % 3
+			output_mode = (output_mode + 1) % 3
 			ip += 2
 		case 5:
 			var val1 = get_param(ip+1, p1_mode, data, mode_base)
@@ -216,10 +227,10 @@ func main() {
 	io := make(map[Point]int)
 
 	io = run_program(orig_int_data, io)
-	
+
 	block_count := 0
 	for _, val := range io {
-		if val == 2  {
+		if val == 2 {
 			block_count++
 		}
 	}
