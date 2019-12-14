@@ -70,18 +70,15 @@ func main() {
 			} else {
 				chem := chem_map[req.name]
 				want_to_produce := req.amount - (produced - used)
-				will_produce := 0
 				produce_multiplier := 1
-				if want_to_produce < chem.min_prod {
-					will_produce = chem.min_prod
-				} else {
-					if want_to_produce % chem.min_prod == 0 {
+				if want_to_produce > chem.min_prod {
+					if want_to_produce%chem.min_prod == 0 {
 						produce_multiplier = want_to_produce / chem.min_prod
 					} else {
 						produce_multiplier = (want_to_produce / chem.min_prod) + 1
 					}
 				}
-				will_produce = chem.min_prod * produce_multiplier
+				will_produce := chem.min_prod * produce_multiplier
 				produced_map[req.name] += will_produce
 				used_map[req.name] += req.amount
 				for name, amount := range chem.reqs {
