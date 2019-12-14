@@ -1,7 +1,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashMap;
-use std::collections::VecDeque;
+//use std::collections::VecDeque;
+use std::collections::HashSet;
+use std::time::{Duration, Instant};
 
 const NEW_LINE : u8 = 10;
 
@@ -48,14 +50,29 @@ fn get_input<T>(filename : &str, line_transform : fn(String) -> T) -> Vec<T> {
 
 }
 
+fn recurse_fill_prod_vec(prod_vec :&mut Vec<usize>, seen :&mut HashSet<usize>, chem_vec : &Vec<(u64, Vec<(usize, u64)>)>, idx_start : usize, idx_ore : usize) {
+    if idx_start == idx_ore {
+        return;
+    }
+    seen.insert(idx_start);
+    for (name, _) in &chem_vec[idx_start].1 {
+        if !seen.contains(name) {
+            recurse_fill_prod_vec(prod_vec, seen, chem_vec, *name, idx_ore);
+        }
+    }
+    prod_vec.push(idx_start);
+}
+
 fn main() {
+    let now = Instant::now();
     let input = get_input("input-14", |s| s );
-    let mut chem_map : HashMap<String, (u64, HashMap<String, u64>)> = HashMap::new();
+    println!("read the file in {}",  now.elapsed().as_micros());
+    let mut chem_map : HashMap<String, (u64, Vec<(String, u64)>)> = HashMap::new();
     let mut chem_names_to_index : HashMap<String, usize> = HashMap::new();
     let mut index :usize = 0;
     let mut idx_fuel :usize = 0;
     for line in input {
-        let mut reqs : HashMap<String, u64> = HashMap::new();
+        let mut reqs : Vec<(String, u64)> = Vec::new();
         let mut name : String = String::from("");
         let mut num : u64 = 0;
         let mut state = 0;
@@ -69,14 +86,14 @@ fn main() {
                     state = 0;
                 }
             } else if ch == ',' {
-                reqs.insert(name.clone(), num);
+                reqs.push((name.clone(), num));
                 name = String::from("");
                 num = 0;
                 state = 2;
             } else if ch == '=' {
                 continue;
             } else if ch == '>' {
-                reqs.insert(name.clone(), num);
+                reqs.push((name.clone(), num));
                 name = String::from("");
                 num = 0;
                 state = 2;
@@ -96,66 +113,51 @@ fn main() {
         chem_names_to_index.insert(name.clone(), index);
         index+=1;
     }
+    println!("input parsed in {}",  now.elapsed().as_micros());
     let idx_ore :usize = index;
     chem_names_to_index.insert(String::from("ORE"), idx_ore);
-    let mut chem_vec : Vec<(u64, HashMap<usize, u64>)> = Vec::with_capacity(index);
+    let mut chem_vec : Vec<(u64, Vec<(usize, u64)>)> = Vec::with_capacity(index);
     for _ in 0..index {
-        chem_vec.push((0, HashMap::new()));
+        chem_vec.push((0, Vec::new()));
     }
     for (name, req) in chem_map {
         let idx : usize = *chem_names_to_index.get(&name).unwrap();
-        let mut req_map : HashMap<usize, u64> = HashMap::new();
+        let mut req_map : Vec<(usize, u64)> = Vec::with_capacity(req.1.len());
         for (cname, cval) in req.1 {
             let cidx : usize = *chem_names_to_index.get(&cname).unwrap();
-            req_map.insert(cidx,cval);
+            req_map.push((cidx,cval));
         }
         chem_vec[idx] = (req.0, req_map);
     }
-    let mut max :u64 = 100000000;
+
+    let mut prod_vec : Vec<usize> = Vec::with_capacity(index+1);
+    let mut seen : HashSet<usize> = HashSet::new();
+    recurse_fill_prod_vec(&mut prod_vec,&mut seen,&chem_vec,idx_fuel,idx_ore);
+
+    println!("setup ready: {}", now.elapsed().as_micros());
+
+    let mut max :u64 = 10000000;
     let mut min :u64 = 0;
     while max > min {
         let mut i : u64 = ((max - min) >> 1) + min;
         if i == min {
             i = max;
         }
-        let mut prod_queue : VecDeque<(usize, u64)> = VecDeque::new();
         let mut produced_map : Vec<u64> = Vec::with_capacity(index+1);
-        let mut used_map : Vec<u64> = Vec::with_capacity(index+1);
         for _ in 0..index+1 {
             produced_map.push(0);
-            used_map.push(0);
         }
-        for (name, amount) in &chem_vec[idx_fuel].1 { 
-            prod_queue.push_back((*name, *amount * i));
-        }
-        while let Some((name, amount)) = prod_queue.pop_front() {
-            let produced = &mut produced_map[name];
-            let used = &mut used_map[name];
-            if name == idx_ore {
-                *produced += amount;
-                *used += amount;
-                continue;
+        produced_map[idx_fuel] = i;
+        for k in (0..prod_vec.len()).rev() {
+            let name = prod_vec[k];
+            let chem = &chem_vec[name];
+            for (c_name, c_amount) in &chem.1 {
+                let ttr : u64 = (produced_map[name] + chem.0 - 1 )/ chem.0;
+                let p = &mut produced_map[*c_name];
+                *p += c_amount * ttr;
             }
-            if (*produced - *used) >= amount {
-                *used += amount;
-            } else {
-                let chem = &chem_vec[name];
-                let want_to_produce : u64 = amount - (*produced - *used);
-                let mut produce_multiplier : u64 = 1;
-                if want_to_produce > chem.0 {
-                    if want_to_produce % chem.0 == 0 {
-                        produce_multiplier = want_to_produce / chem.0;
-                    } else {
-                        produce_multiplier = (want_to_produce / chem.0) + 1;
-                    }
-                }
-                let will_produce = chem.0 * produce_multiplier;
-                *produced += will_produce;
-                *used += amount;
-                for (c_name, c_amount) in &chem.1 {
-                    prod_queue.push_back((*c_name, *c_amount * produce_multiplier));
-                }
-            }
+            //println!("{}",name);
+            //println!("{:?}", produced_map);
         }
         let produced = produced_map[idx_ore];
         if produced > 1000000000000 {
@@ -164,6 +166,8 @@ fn main() {
             min = i;
         }
     }
+
+    println!("main stuff done after {}", now.elapsed().as_micros());
 
     println!("{}", max);
 }
