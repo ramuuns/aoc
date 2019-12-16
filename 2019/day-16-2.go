@@ -41,25 +41,10 @@ func main() {
 	signal = signal[offset:]
 	fmt.Println(len(signal))
 
-	//var pattern = [4]int{0, 1, 0, -1};
-
 	for k := 0; k < 100; k++ {
-		//		fmt.Println(k)
-		new_signal := make([]int, len(signal))
-		for i, _ := range signal {
-			//fmt.Println(i)
-			var it = 0
-			if i == 0 {
-				for c := i; c < len(signal); c++ {
-					it += signal[c]
-				}
-				new_signal[i] = abs(it % 10)
-			} else {
-				new_signal[i] = (new_signal[i-1] + 10 - signal[i-1]) % 10
-			}
+		for i := len(signal) - 2; i >= 0; i-- {
+			signal[i] = (signal[i+1] + signal[i]) % 10
 		}
-		//fmt.Println(new_signal);
-		signal = new_signal
 	}
 
 	for c := 0; c < 8; c++ {
