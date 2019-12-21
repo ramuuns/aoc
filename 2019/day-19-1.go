@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	//	"os"
-	//	"bufio"
+	//"os"
+	//"bufio"
 )
 
 func get_param(idx, mode int, data []int, mode_base int) int {
@@ -66,10 +66,12 @@ func (p *Program) duplicate() Program {
 	return Program{p.ip, p.mode_base, data}
 }
 
-func (p *Program) run_until_output(input int) (int, bool) {
+func (p *Program) run_until_output(input Point) (int, bool) {
 
 	ip := &p.ip
 	mode_base := &p.mode_base
+	//reader := bufio.NewReader(os.Stdin)
+	reading_x := true
 
 	for p.data[*ip] != 99 {
 		//fmt.Println(p)
@@ -101,14 +103,20 @@ func (p *Program) run_until_output(input int) (int, bool) {
 			p.data[dst] = val1 * val2
 			*ip += 4
 		case 3:
-			int_val := input
+			//int_val := input
 			//fmt.Print(">")
-			//text, _ := reader.ReadString('\n')
-			//int_val, err := strconv.Atoi(strings.TrimSpace(text))
+			//text, _, _ := reader.ReadLine()
+			//int_val := int(text)
+			//int_val, _ := strconv.Atoi(strings.TrimSpace(string(text)))
 			//if err != nil {
 			//    fmt.Println(err)
 			//    return io
 			//}
+			int_val := input.y
+			if reading_x {
+				int_val = input.x
+				reading_x = false
+			}
 			var dst = get_dest_param(*ip+1, p1_mode, p.data, *mode_base)
 			if dst >= len(p.data) {
 				data_ := make([]int, dst+1)
@@ -178,7 +186,7 @@ func (p *Program) run_until_output(input int) (int, bool) {
 }
 
 func main() {
-	input, err := ioutil.ReadFile("input-17")
+	input, err := ioutil.ReadFile("input-19")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -196,53 +204,21 @@ func main() {
 		orig_int_data[i] = int_val
 	}
 
+	//orig_int_data[0] = 2;
 	p := Program{0, 0, orig_int_data}
-	x := 0
-	y := 0
-	max_x := 0
-	grid := make([][]int, 1)
-	maybe_cross := make([]Point, 0)
-	path_ch := int('#')
-	for {
-		ch, cont := p.run_until_output(0)
-		if !cont {
-			break
-		}
-		fmt.Printf("%c", ch)
-		grid[y] = append(grid[y], ch)
-		if ch == path_ch && y > 0 && x > 0 {
-			if grid[y][x-1] == path_ch && grid[y-1][x] == path_ch {
-				maybe_cross = append(maybe_cross, Point{x, y})
-			}
-		}
-		x++
-		if ch == 10 {
-			grid = append(grid, make([]int, 0))
-			y++
-			if x > max_x {
-				max_x = x
-			}
-			x = 0
-		}
-	}
-
-	y--
-	max_y := y
-
-	fmt.Println(max_x, max_y)
-	sum := 0
-	for _, p := range maybe_cross {
-		fmt.Println(p)
-		if p.y < max_y && p.x < max_x {
-			if p.y == 38 {
-				continue
-			}
-			if grid[p.y+1][p.x] == grid[p.y][p.x+1] && grid[p.y+1][p.x] == grid[p.y][p.x] {
-				sum += p.x * p.y
+	cnt := 0
+	for x := 0; x < 50; x++ {
+		for y := 0; y < 50; y++ {
+			pr := p.duplicate()
+			ch, cont := pr.run_until_output(Point{x, y})
+			cnt += ch
+			if !cont {
+				fmt.Println("not continuing", x, y)
+				break
 			}
 		}
 	}
 
-	fmt.Println(sum)
+	fmt.Println(cnt)
 
 }

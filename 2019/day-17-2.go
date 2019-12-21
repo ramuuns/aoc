@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-//	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
+	//	"gopkg.in/karalabe/cookiejar.v1/collections/deque"
+	"bufio"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
-	"os"
-	"bufio"
 )
 
 func get_param(idx, mode int, data []int, mode_base int) int {
@@ -66,7 +66,7 @@ func (p *Program) duplicate() Program {
 	return Program{p.ip, p.mode_base, data}
 }
 
-func (p *Program) run_until_output(/*input int*/) (int, bool) {
+func (p *Program) run_until_output( /*input int*/ ) (int, bool) {
 
 	ip := &p.ip
 	mode_base := &p.mode_base
@@ -198,7 +198,7 @@ func main() {
 		orig_int_data[i] = int_val
 	}
 
-	orig_int_data[0] = 2;
+	orig_int_data[0] = 2
 	p := Program{0, 0, orig_int_data}
 	for {
 		ch, cont := p.run_until_output()
@@ -206,10 +206,10 @@ func main() {
 			break
 		}
 		if ch < 256 {
-		fmt.Printf("%c", ch);
-	} else {
-		fmt.Printf("%d\n", ch);
-	}
+			fmt.Printf("%c", ch)
+		} else {
+			fmt.Printf("%d\n", ch)
+		}
 	}
 
 }
