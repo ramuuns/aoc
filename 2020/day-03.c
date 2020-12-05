@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "_timer.h"
 
 typedef struct _slope {
     int xdiff;
@@ -9,6 +10,7 @@ typedef struct _slope {
 } slope;
 
 int main() {
+    timer_start();
     FILE *fp = fopen("input-03","r");
     if ( !fp ) {
         printf("no file\n");
@@ -48,4 +50,5 @@ int main() {
         mul *= slopes[i].trees;
     }
     printf("multiplied tres: %u\n", mul);
+    printtime();
 }

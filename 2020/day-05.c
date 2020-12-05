@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include "_timer.h"
 
 int main() {
+    timer_start();
     FILE *fp = fopen("input-05","r");
     if ( !fp ) {
         printf("no file\n");
@@ -47,4 +49,5 @@ int main() {
     fclose(fp);
     printf("max: %d\n", max);
     printf("seatid by math :%d\n", my_seat);
+    printtime();
 }

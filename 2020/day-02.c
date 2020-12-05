@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include "_timer.h"
 
 int main() {
+    timer_start();
     FILE *fp = fopen("input-02","r");
     if ( !fp ) {
         printf("could not open file\n");
@@ -27,4 +29,5 @@ int main() {
     }
     printf("nr of valid passwords %d\n", valid_count);
     printf("nr of valid passwords (part 2) %d\n", valid_part2);
+    printtime();
 }

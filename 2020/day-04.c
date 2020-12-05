@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "_timer.h"
 
 #define BYR 0x1
 #define IYR 0x2
@@ -145,6 +146,7 @@ int is_valid_value(int type, char value[255]) {
 }
 
 int main() {
+    timer_start();
     FILE *fp = fopen("input-04","r");
     if ( !fp ) {
         printf("no file\n");
@@ -188,4 +190,5 @@ int main() {
     }
     printf("num valid %d\n", num_valid);
     printf("num valid part 2 %d\n", num_valid_part2);
+    printtime();
 }
