@@ -7,15 +7,15 @@ typedef struct _childbag {
     int count;
     int id;
     int hash;
-    char *name;
+//    char *name;
 } childbag_t;
 
 typedef struct _bag {
-    char *name;
+//    char *name;
     char child_cnt;
     int id;
     unsigned int subbag_cnt;
-    childbag_t *children;
+    childbag_t children[15];
 } bag_t;
 
 
@@ -24,11 +24,11 @@ typedef struct _bag {
 // so if you want this to work on your input you might need to adjust this number
 #define HASH_SIZE 23311
 
-int make_hash(char *str) {
+int make_hash(char *str, int size) {
      uint32_t s1 = 1;
      uint32_t s2 = 0;
 
-     for (size_t n = 0; *(str+n); n++) {
+     for (size_t n = 0; n < size; n++) {
         s1 = (s1 + *(str+n)) % 65521;
         s2 = (s2 + s1) % 65521;
      }     
@@ -43,7 +43,7 @@ int main() {
         return 1;
     }
     char buff[255];
-    bag_t bags[600] = { (bag_t){ .name = NULL, .child_cnt = 0, .subbag_cnt = 0 } };
+    bag_t bags[600] = { (bag_t){ .child_cnt = 0, .subbag_cnt = 0 } };
     int bag_cnt = 0;
     int has_bag_name = 0;
     int space_cnt = 0;
@@ -66,10 +66,13 @@ int main() {
                 //printf("it's a space with i = %d, space count = %d\n", i, space_cnt);
                 if ( space_cnt == 1 ) {
                     if ( has_bag_name == 0 ) {
-                        bags[bag_cnt].name = (char *)calloc(i+1, sizeof(char));
-                        strncpy(bags[bag_cnt].name, buff, i);
+                        //bags[bag_cnt].name = (char *)calloc(i+1, sizeof(char));
+                        //strncpy(bags[bag_cnt].name, buff, i);
                         has_bag_name = 1;
-                        h = make_hash(bags[bag_cnt].name);
+                        if ( !start_id && buff[0] == 's' && buff[6] == 'g' && strncmp(buff, "shiny gold", 10) == 0 ) {
+                            start_id = bags[bag_cnt].id;
+                        }
+                        h = make_hash(buff, i);
                         hashes[h] = bag_cnt;
                         i += 13; //skip ahead by "bags contain "
                         if ( buff[i+1] == 'n' ) { //no other bags
@@ -83,15 +86,15 @@ int main() {
                                 }
                             }
                             bags[bag_cnt].child_cnt = comma_count + 1;
-                            bags[bag_cnt].children = malloc( sizeof(childbag_t) * (comma_count + 1));
+                            //bags[bag_cnt].children = malloc( sizeof(childbag_t) * (comma_count + 1));
                             child_nr = 0;
                         }
                         buff_start = i;
                         space_cnt = 0;
                     } else {
-                        bags[bag_cnt].children[child_nr].name = (char *)calloc(i+1 - buff_start, sizeof (char));
-                        strncpy(bags[bag_cnt].children[child_nr].name, buff+buff_start, i-buff_start);
-                        h = make_hash(bags[bag_cnt].children[child_nr].name);
+                        //bags[bag_cnt].children[child_nr].name = (char *)calloc(i+1 - buff_start, sizeof (char));
+                        //strncpy(bags[bag_cnt].children[child_nr].name, buff+buff_start, i-buff_start);
+                        h = make_hash(buff+buff_start, i-buff_start);// bags[bag_cnt].children[child_nr].name);
                         if ( hashes[h] ) {
                             bags[bag_cnt].children[child_nr].id = hashes[h]; 
                         } else {
@@ -114,9 +117,6 @@ int main() {
                 i++;
                 buff_start = i+1;
             }
-        }
-        if ( !start_id && bags[bag_cnt].name[0] == 's' && bags[bag_cnt].name[6] == 'g' && strcmp(bags[bag_cnt].name, "shiny gold") == 0 ) {
-            start_id = bags[bag_cnt].id;
         }
         bag_cnt++;
     }
