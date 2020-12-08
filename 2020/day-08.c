@@ -79,17 +79,26 @@ int main() {
         (*program[comp.ip].fn)(&program[comp.ip].arg);
     }
     printf("acc after one loop: %d\n", comp.acc);
+
+    for ( int i = 0; i < program_size; i++ ) {
+        program[i].seen = 0;
+    }
     int did_exit_cleanly = 0;
     int changed_instr = -1;
+    int last_ac = 0;
+    int last_ip = 0;
+    int seen_after_stack[program_size];
+    int seen_after_sp = 0;
     while ( 1 ) {
-        comp.ip = 0;
-        comp.acc = 0;
+        comp.ip = last_ip;
+        comp.acc = last_ac;
         int did_change = 0;
         if ( changed_instr >= 0 ) {
             program[changed_instr].fn = program[changed_instr].fn == &noop ? &jmp : &noop;
         }
-        for ( int i = 0; i < program_size; i++ ) {
-            program[i].seen = 0;
+        while ( seen_after_sp - 1 >= 0 ) {
+            program[ seen_after_stack[seen_after_sp-1] ].seen = 0;
+            seen_after_sp--;
         }
         while ( 1 ) {
             if ( comp.ip >= program_size ) {
@@ -104,6 +113,11 @@ int main() {
                 changed_instr = comp.ip;
                 program[comp.ip].changed = 1;
                 program[comp.ip].fn = program[comp.ip].fn == &noop ? &jmp : &noop;
+                last_ac = comp.acc;
+                last_ip = comp.ip;
+                seen_after_stack[seen_after_sp++] = comp.ip;
+            } else if ( did_change ) {
+                seen_after_stack[seen_after_sp++] = comp.ip;
             }
             program[comp.ip].seen = 1;
             (*program[comp.ip].fn)(&program[comp.ip].arg);
