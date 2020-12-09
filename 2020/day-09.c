@@ -45,7 +45,6 @@ int main() {
     int w_st = 0;
     int w_end = 0;
     fseek(fp, 0, SEEK_SET);
-    int i = 0;
     while ( fscanf(fp, "%u\n", &current_nr ) ) {
         if ( sum + current_nr == tgt_nr ) {
             window[w_end] = current_nr;
@@ -61,10 +60,6 @@ int main() {
             break;
         }
         w_end = (w_end+1) % 1000;
-        i++;
-        if ( i == 1100 ) {
-            return 1;
-        }
     }
     fclose(fp);
     unsigned int min = window[w_st];
