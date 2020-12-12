@@ -39,18 +39,19 @@ void fill_seats(int rowsize, int rows, int tolerance, int *grid, int **npos ) {
             int n_cnt = 0;
 //            printf("getting neighbors of: ");
 //            print_coord(*(grid+i), rowsize);
-            for ( int k = 0; k < 8 && *(npos + (i << 3) + k); k++ ) {
-                int is_neg = *(*(npos + (i << 3) + k)) < 0;
+            int **n = npos + (i << 3);
+            for ( int k = 0; k < 8 && *n; k++, n++ ) {
+                int is_neg = **n < 0;
                 if ( is_neg ) {
-                    *(*(npos + (i << 3) + k)) = -(*(*(npos + (i << 3) + k)));
+                    **n = -(**n);
                 }
 
-                if ( ! ( *(*(npos + (i << 3) + k)) & 1 ) ) {
+                if ( ! ( **n & 1 ) ) {
 //                    print_coord( *(*(npos + (i << 3) + k)), rowsize );
                     n_cnt++;
                 }
                 if ( is_neg ) {
-                     *(*(npos + (i << 3) + k)) = -(*(*(npos + (i << 3) + k)));
+                    **n = -(**n);
                 }
             }
             if ( n_cnt < tolerance ) {
@@ -77,9 +78,10 @@ void fill_seats(int rowsize, int rows, int tolerance, int *grid, int **npos ) {
         int ecnt = 0;
         for ( int i = 0; i < q_end; i++ ) {
             int addr = *(deq[i]) >> 2;
-            for ( int k = 0; k < 8; k++ ) {
-                if ( *(npos + (addr << 3) + k) && ( *(*(npos + (addr << 3) + k)) & 3 ) && !(*(*(npos + (addr << 3) + k)) & 1) ) {
-                    empty_list[ecnt++] = *(npos + (addr << 3) + k);
+            int **n = npos + (addr << 3);
+            for ( int k = 0; k < 8 && *n; k++, n++ ) {
+                if ( (**n & 3) && !(**n & 1) ) {
+                    empty_list[ecnt++] = *n;
                 }
             }
         }
@@ -89,29 +91,29 @@ void fill_seats(int rowsize, int rows, int tolerance, int *grid, int **npos ) {
         q_end = 0;
         for ( int i =0; i < ecnt; i++ ) {
             int addr = *(empty_list[i]) >> 2;
-            for ( int k = 0; k < 8; k++ ) {
-                if ( *(npos + (addr << 3) + k) &&  *(*(npos + (addr << 3) + k)) > 0 && ( *(*(npos + (addr << 3) + k)) & 3 ) && !(*(*(npos + (addr << 3) + k)) & 1) ) {
+            int **n = npos + (addr << 3);
+            for ( int k = 0; k < 8 && *n; k++, n++ ) {
+                if ( **n > 0 && ( **n & 3 ) && !(**n & 1) ) {
                     int n_cnt = 0;
-                    int addr2 = *(*(npos + (addr << 3) + k)) >> 2;
-                    for ( int kk =0; kk < 8; kk++ ) {
-                        if ( *(npos + (addr2 << 3) + kk) ) {
-                            int is_neg = *(*(npos + (addr2 << 3) + kk)) < 0;
-                            if ( is_neg ) {
-                                *(*(npos + (addr2 << 3) + kk)) = -(*(*(npos + (addr2 << 3) + kk)));
-                            }
+                    int addr2 = **n >> 2;
+                    int **nn = npos + (addr2 << 3); 
+                    for ( int kk =0; kk < 8 && *nn; kk++, nn++ ) {
+                        int is_neg = **nn < 0;
+                        if ( is_neg ) {
+                            **nn = -(**nn);
+                        }
                            
-                            if ( ( *(*(npos + (addr2 << 3) + kk)) & 3 ) && !(*(*(npos + (addr2 << 3) + kk)) & 1) ) {
-                                n_cnt++;
-                            }
+                        if ( ( **nn & 3 ) && !(**nn & 1) ) {
+                            n_cnt++;
+                        }
 
-                            if ( is_neg ) {
-                                *(*(npos + (addr2 << 3) + kk)) = -(*(*(npos + (addr2 << 3) + kk)));
-                            }
+                        if ( is_neg ) {
+                            **nn = -(**nn);
                         }
                     }
                     if ( n_cnt < tolerance ) {
-                        *(*(npos + (addr << 3) + k)) = -*(*(npos + (addr << 3) + k));
-                        deq[q_end++] = *(npos + (addr << 3) + k);
+                        **n = -(**n);
+                        deq[q_end++] = *n;
                     }
                 }
             }
@@ -225,6 +227,11 @@ int main(){
     }
     printf("part 1 %d\n", p1_cnt);
     printf("part 2 %d\n", p2_cnt);
+
+    free(n_pos);
+    free(n_pos_p2);
+    free(grid);
+    free(gridp2);
 
     printtime();
 }
