@@ -11,39 +11,27 @@ int main() {
     timer_start();
     int initial_numbers[INITIAL_COUNT] = { INITIAL_NUMBERS };
     int *nr_seen_at = calloc(HASH_SIZE, sizeof(int));
-    int *nr_diff_at = calloc(HASH_SIZE, sizeof(int));
 
     int i = 1;
     int num = 0;
 
-    while ( i <= INITIAL_COUNT ) {
+    while ( i < INITIAL_COUNT ) {
         num = initial_numbers[i-1];
-        nr_seen_at[num] = i;
-        i++;
+        nr_seen_at[num] = i++;
     }
 
-    int is_seen = 0;
+    int prev = initial_numbers[INITIAL_COUNT - 1 ];
+
     int limits[2] = {2020, 30000000};
     for ( int k = 0; k < 2; k++ ) {
 
-        while ( i <= limits[k] ) {
-            if ( is_seen ) {
-                num = nr_diff_at[num];
-                is_seen = nr_seen_at[num];
-                if ( is_seen ) {
-                    nr_diff_at[num] = i - nr_seen_at[num];
-                }
-                nr_seen_at[num] = i;
-            } else {
-                num = 0;
-                is_seen = 1;
-                nr_diff_at[0] = i - nr_seen_at[0];
-                nr_seen_at[0] = i;
-            }
-            i++;
+        while ( i < limits[k] ) {
+            num = nr_seen_at[prev] ?( i - nr_seen_at[prev] ) : 0;
+            nr_seen_at[prev] = i++;
+            prev = num;
         }
 
-        printf("turn %d nr: %d (is new: %d)\n", i-1, num, is_seen);
+        printf("turn %d nr: %d\n", i, num);
 
     }
 
