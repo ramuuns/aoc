@@ -5,47 +5,47 @@
 #define INITIAL_COUNT 6
 #define INITIAL_NUMBERS 2,1,10,11,0,6
 
+#define HASH_SIZE 30000000
+
 int main() {
     timer_start();
     int initial_numbers[INITIAL_COUNT] = { INITIAL_NUMBERS };
-    long *nr_seen_at = malloc(30000000 * 2 * sizeof(long)); //[2020][2] =  // = { {-1, 0} };
-    for ( int i = 0; i < 30000000; i++ ) {
-        *(nr_seen_at+(i<<1)) = -1;
-        *(nr_seen_at+(i<<1)+1) = 0;
-    }
-    printtime();
+    int *nr_seen_at = calloc(HASH_SIZE, sizeof(int));
+    int *nr_diff_at = calloc(HASH_SIZE, sizeof(int));
 
-    unsigned int i = 1;
-    long pseen_at = 0;
-    unsigned int num = 0;
+    int i = 1;
+    int num = 0;
 
-    while ( i <= 30000000 ) {
-        if ( i <= INITIAL_COUNT ) {
-
-            num = initial_numbers[i-1];
-            pseen_at = *(nr_seen_at + (num << 1));
-            *(nr_seen_at + (num << 1)) = i;
-        } else {
-            if ( pseen_at == -1 ) {
-                num = 0;
-                pseen_at = *nr_seen_at;
-                *(nr_seen_at+1) = i - *nr_seen_at;
-                *nr_seen_at = i;
-            } else {
-                num = *(nr_seen_at + (num << 1) + 1);
-                pseen_at = *(nr_seen_at + (num << 1));
-                if ( pseen_at > -1 ) {
-                    *(nr_seen_at + (num << 1) + 1) = i - *(nr_seen_at + (num <<1));
-                }
-                *(nr_seen_at + (num << 1)) = i;
-            }
-        }
-        if ( i == 2020 ) {
-            printf("turn %u nr :%u (pseen at %ld)\n", i, num, pseen_at);
-        }
+    while ( i <= INITIAL_COUNT ) {
+        num = initial_numbers[i-1];
+        nr_seen_at[num] = i;
         i++;
     }
-    printf("turn %u nr :%u (pseen at %ld)\n", i, num, pseen_at);
+
+    int is_seen = 0;
+    int limits[2] = {2020, 30000000};
+    for ( int k = 0; k < 2; k++ ) {
+
+        while ( i <= limits[k] ) {
+            if ( is_seen ) {
+                num = nr_diff_at[num];
+                is_seen = nr_seen_at[num];
+                if ( is_seen ) {
+                    nr_diff_at[num] = i - nr_seen_at[num];
+                }
+                nr_seen_at[num] = i;
+            } else {
+                num = 0;
+                is_seen = 1;
+                nr_diff_at[0] = i - nr_seen_at[0];
+                nr_seen_at[0] = i;
+            }
+            i++;
+        }
+
+        printf("turn %d nr: %d (is new: %d)\n", i-1, num, is_seen);
+
+    }
 
     printtime();
 }
