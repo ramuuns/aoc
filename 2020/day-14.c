@@ -13,12 +13,13 @@ int main(){
     unsigned long memory[500][2] = { {0,0} };
     unsigned long *memoryp2 = calloc((unsigned long)1<<36, sizeof(unsigned long));
     int memsize = 0;
-    unsigned long *memstack[100000] = { NULL };
     int memsize2 = 0;
     unsigned long value, onemask = 0, zeromask = 0;
     unsigned long addrmasks[512][2];
     int addrmask_cnt = 0;
-    int addr;
+    unsigned long addr;
+    long sum = 0;
+    long sum2 = 0;
     while ( fgets(buff, 255, fp) ) {
         if (buff[0] == '\n' ) {
             continue;
@@ -55,36 +56,29 @@ int main(){
                 i++;
             }
         } else { //mem[234] = 456
-            sscanf(buff, "mem[%d] = %lu", &addr, &value);
+            sscanf(buff, "mem[%lu] = %lu", &addr, &value);
             int i = 0;
             while ( i < memsize && memory[i][0] != addr ) {
                 i++;
             }
             memory[i][0] = addr;
+            sum -= memory[i][1];
             memory[i][1] = (value | onemask) & ~zeromask;
+            sum += memory[i][1];
             if ( i == memsize ) {
                 memsize++;
             }
+            addr |= onemask;
             for ( int k = 0; k < addrmask_cnt; k++ ) {
-                unsigned long addr2 = ((addr | onemask) | addrmasks[k][1] ) & ~(addrmasks[k][0] );
-                *(memoryp2+addr2) = value;
-                memstack[memsize2++] = memoryp2+addr2;
+                unsigned long addr2 = (addr | addrmasks[k][1] ) & ~(addrmasks[k][0] );
+                sum2 += value - memoryp2[addr2];
+                memoryp2[addr2] = value;
             }
         }
     }
     fclose(fp);
-    unsigned long sum = 0;
-    for ( int i = 0; i < memsize; i++ ) {
-        sum += memory[i][1];
-    }
-    printf("sum: %lu\n", sum);
-    sum = 0;
-    for ( int i = memsize2-1; i >= 0; i-- ) {
-        sum += *(memstack[i]);
-        *(memstack[i]) = 0;
-        
-    }
-    printf("sump2: %lu (memsize: %d)\n", sum, memsize2);
+    printf("sum: %ld\n", sum);
+    printf("sump2: %ld (memsize: %d)\n", sum2, memsize2);
     free(memoryp2);
     printtime();
 }
