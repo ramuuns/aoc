@@ -51,6 +51,9 @@ int main() {
     int *planecnt3 = calloc( zsize2*zsize2, sizeof(int));
     int *planecnt4 = calloc( zsize2*zsize2, sizeof(int));
 
+    int *cubecnt3 = calloc( zsize2, sizeof(int));
+    int *cubecnt4 = calloc( zsize2, sizeof(int));
+
     FILE *fp = fopen("input-17","r");
     if ( !fp ) {
         printf("no input\n");
@@ -76,6 +79,9 @@ int main() {
 
     *(planecnt3 + zeroidx*zsize2 + zeroidx) = cnt;
     *(planecnt4 + zeroidx*zsize2 + zeroidx) = cnt;
+
+    *(cubecnt3 + zeroidx) = cnt;
+    *(cubecnt4 + zeroidx) = cnt;
 
     int minxy = x;
     int maxxy = y;
@@ -129,6 +135,9 @@ int main() {
     int **p1 = &planecnt3;
     int **p2 = &planecnt4;
 
+    int **cc1 = &cubecnt3;
+    int **cc2 = &cubecnt4;
+
     int zoff = zsize2*xy_size*xy_size;
     int woff = xy_size*xy_size;
     int yoff = xy_size;
@@ -140,14 +149,19 @@ int main() {
         int **t2 = p1;
         p1 = p2;
         p2 = t2;
+        t2 = cc1;
+        cc1 = cc2;
+        cc2 = t2;
         cnt = 0;
         for ( int z = zeroidx - t; z <= zeroidx+t; z++ ) {
+            *(*(cc1) + z) = 0;
             for ( int w = zeroidx - t; w <= zeroidx+t; w++ ) {
                 *(*(p1) + z*zsize2 + w) = 0;
                 for ( y = minxy - t; y < maxxy + t; y++ ) {
                     for ( x = minxy - t; x < maxxy + t; x++ ) {
                         int ncnt = 0;
                         for ( int zd = -1; zd < 2; zd++ ) {
+                            if ( *(*(cc2) + z+zd) ) {
                             for ( int wd = -1; wd < 2; wd++ ) {
                                 if ( *(*(p2) + (z+zd)*zsize2 + w+wd) ) { //only check items in this plane if we know that there's _anyting_ in them
                                 for ( int yd = -1; yd < 2; yd++ ) {
@@ -157,6 +171,7 @@ int main() {
                                     }
                                 }
                                 }
+                            }
                             }
                         }
                         int c = z*zoff + w*woff + y * yoff + x;
@@ -169,6 +184,7 @@ int main() {
                     }
                 }
                 cnt += *(*(p1) + z*zsize2 + w);
+                *(*(cc1) + z) += *(*(p1) + z*zsize2 + w);
             }
         }
 //        printf("\n\nafter turn %d\n", t);
