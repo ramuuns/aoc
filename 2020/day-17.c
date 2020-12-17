@@ -48,6 +48,9 @@ int main() {
     char *grid3 = calloc( zsize2*zsize2*xy_size*xy_size, sizeof(char));
     char *grid4 = calloc( zsize2*zsize2*xy_size*xy_size, sizeof(char));
 
+    int *planecnt3 = calloc( zsize2*zsize2, sizeof(int));
+    int *planecnt4 = calloc( zsize2*zsize2, sizeof(int));
+
     FILE *fp = fopen("input-17","r");
     if ( !fp ) {
         printf("no input\n");
@@ -58,6 +61,7 @@ int main() {
     int zeroidx = zsize2/2;
     int zoffset = zsize2*xy_size*xy_size*zeroidx  + zeroidx*xy_size*xy_size;
     char buff[10];
+    int cnt = 0;
     while ( fgets(buff, 10, fp) ) {
         for ( int i = 0; buff[i] != '\n'; i++ ) {
             int c = y*xy_size + x+i;
@@ -65,13 +69,19 @@ int main() {
             *(grid2 + c) = buff[i] == '#' ? 1 : 0;
             *(grid3 + zoffset + c) = buff[i] == '#' ? 1 : 0;
             *(grid4 + zoffset + c) = buff[i] == '#' ? 1 : 0;
+            cnt += buff[i] == '#' ? 1 : 0;
         }
         y++;
     }
 
+    *(planecnt3 + zeroidx*zsize2 + zeroidx) = cnt;
+    *(planecnt4 + zeroidx*zsize2 + zeroidx) = cnt;
+
+    int minxy = x;
+    int maxxy = y;
+
     char **g1 = &grid;
     char **g2 = &grid2;
-    int cnt = 0;
 
 //    printf("intial grid: \n");
 //    print_grid(g1, zsize, xy_size);
@@ -82,8 +92,8 @@ int main() {
         g2 = tmp;
         cnt = 0;
         for ( int z = 0; z <= t; z++ ) {
-            for ( y = 1; y < xy_size - 1; y++ ) {
-                for ( x = 1; x < xy_size - 1; x++ ) {
+            for ( y = minxy - t; y < maxxy + t; y++ ) {
+                for ( x = minxy - t; x < maxxy + t; x++ ) {
                     int ncnt = 0;
                     for ( int zd = -1; zd < 2; zd++ ) {
                         for ( int yd = -1; yd < 2; yd++ ) {
@@ -116,6 +126,9 @@ int main() {
     g1 = &grid3;
     g2 = &grid4;
 
+    int **p1 = &planecnt3;
+    int **p2 = &planecnt4;
+
     int zoff = zsize2*xy_size*xy_size;
     int woff = xy_size*xy_size;
     int yoff = xy_size;
@@ -124,19 +137,25 @@ int main() {
         char **tmp = g1;
         g1 = g2;
         g2 = tmp;
+        int **t2 = p1;
+        p1 = p2;
+        p2 = t2;
         cnt = 0;
         for ( int z = zeroidx - t; z <= zeroidx+t; z++ ) {
             for ( int w = zeroidx - t; w <= zeroidx+t; w++ ) {
-                for ( y = 1; y < xy_size - 1; y++ ) {
-                    for ( x = 1; x < xy_size - 1; x++ ) {
+                *(*(p1) + z*zsize2 + w) = 0;
+                for ( y = minxy - t; y < maxxy + t; y++ ) {
+                    for ( x = minxy - t; x < maxxy + t; x++ ) {
                         int ncnt = 0;
                         for ( int zd = -1; zd < 2; zd++ ) {
                             for ( int wd = -1; wd < 2; wd++ ) {
+                                if ( *(*(p2) + (z+zd)*zsize2 + w+wd) ) { //only check items in this plane if we know that there's _anyting_ in them
                                 for ( int yd = -1; yd < 2; yd++ ) {
                                     for ( int xd = -1; xd < 2; xd++ ) {
                                         if ( zd == 0 && xd == 0 && yd == 0 && wd == 0 ) continue;
                                         ncnt += *((*g2) + (z+zd)*zoff + (w+wd)*woff + (y+yd)*yoff + x+xd);
                                     }
+                                }
                                 }
                             }
                         }
@@ -146,9 +165,10 @@ int main() {
                         } else {
                             *((*g1) + c) = ncnt == 3 ? 1 : 0;
                         }
-                        cnt += *((*g1) + c);
+                        *(*(p1) + z*zsize2 + w) += *((*g1) + c);
                     }
                 }
+                cnt += *(*(p1) + z*zsize2 + w);
             }
         }
 //        printf("\n\nafter turn %d\n", t);
@@ -161,6 +181,8 @@ int main() {
     free(grid2);
     free(grid3);
     free(grid4);
+    free(planecnt3);
+    free(planecnt4);
     printtime();
 }
 
