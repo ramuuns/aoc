@@ -4,18 +4,18 @@
 #define TILES_PER_ROW 12
 #define IMAGE_SIZE 96
 
+
+#define N 0
+#define E 1
+#define S 2
+#define W 3
+
 typedef struct _tile {
     int id;
     int ncnt;
     int seen;
-    int n_idx;
-    int n;
-    int s_idx;
-    int s;
-    int w_idx;
-    int w;
-    int e_idx;
-    int e;
+    int borders[4];
+    int neighbor_idx[4];
     char image[8][8];
 } tile_t;
 
@@ -29,11 +29,11 @@ int reverse_bits(int n) {
 }
 
 void rotate_tile (tile_t *tile) {
-    int tmp = tile->n;
-    tile->n = reverse_bits(tile->w);
-    tile->w = tile->s;
-    tile->s = reverse_bits(tile->e);
-    tile->e = tmp;
+    int tmp = tile->borders[0];
+    tile->borders[0] = reverse_bits(tile->borders[3]);
+    tile->borders[3] = tile->borders[2];
+    tile->borders[2] = reverse_bits(tile->borders[1]);
+    tile->borders[1] = tmp;
     char t;
     for ( int i = 0; i < 4; i++ ) {
         for ( int j = i; j < 8 - i - 1; j++ ) {
@@ -47,11 +47,11 @@ void rotate_tile (tile_t *tile) {
 }
 
 void flip_tile(tile_t *tile) {
-    int tmp = tile->n;
-    tile->n = tile->s;
-    tile->s = tmp;
-    tile->e = reverse_bits(tile->e);
-    tile->w = reverse_bits(tile->w);
+    int tmp = tile->borders[0];
+    tile->borders[0] = tile->borders[2];
+    tile->borders[2] = tmp;
+    tile->borders[1] = reverse_bits(tile->borders[1]);
+    tile->borders[3] = reverse_bits(tile->borders[3]);
     for ( int y = 0; y<4; y++ ) {
         for ( int x = 0; x<8; x++ ) {
             char t = tile->image[y][x];
@@ -126,7 +126,7 @@ int main() {
     }
     int b_map[1024] = { 0 };
     int num_tiles = 0;
-    tile_t tiles[144] = { {.id = 0, .ncnt = 0, .seen = 0, .n = 0, .s = 0, .w = 0, .e = 0} };
+    tile_t tiles[144] = { {.id = 0, .ncnt = 0, .seen = 0, .borders = { 0, 0, 0 ,0 } } };
     int tiles_to_idx[1024][2];
     for ( int i = 0; i < 1024; i ++ ) {
         tiles_to_idx[i][0] = -1;
@@ -140,79 +140,46 @@ int main() {
         }
         if ( buff[0] == 'T' ) {
             num_tiles++;
-            tiles[num_tiles-1].s_idx = -1;
-            tiles[num_tiles-1].n_idx = -1;
-            tiles[num_tiles-1].e_idx = -1;
-            tiles[num_tiles-1].w_idx = -1;
+            for ( int i = 0; i < 4; i++ ) {
+                tiles[num_tiles-1].neighbor_idx[i] = -1;
+            }
             sscanf(buff, "Tile %d:", &tiles[num_tiles-1].id);
             n = 0;
         } else {
-            tiles[num_tiles-1].w <<= 1;
-            tiles[num_tiles-1].e <<= 1;
-            tiles[num_tiles-1].w |= buff[0] == '#';
-            tiles[num_tiles-1].e |= buff[9] == '#';
+            tiles[num_tiles-1].borders[W] <<= 1;
+            tiles[num_tiles-1].borders[E] <<= 1;
+            tiles[num_tiles-1].borders[W] |= buff[0] == '#';
+            tiles[num_tiles-1].borders[E] |= buff[9] == '#';
             if ( n == 0 ) {
                 for ( int i = 0; i < 10; i++ ) {
-                    tiles[num_tiles-1].n <<= 1;
-                    tiles[num_tiles-1].n |= buff[i] == '#';
+                    tiles[num_tiles-1].borders[N] <<= 1;
+                    tiles[num_tiles-1].borders[N] |= buff[i] == '#';
                 }
             } else if ( n == 9 ) {
                 for ( int i = 0; i < 10; i++ ) {
-                    tiles[num_tiles-1].s <<= 1;
-                    tiles[num_tiles-1].s |= buff[i] == '#';
-                }
-                b_map[tiles[num_tiles-1].w] = reverse_bits(tiles[num_tiles-1].w);
-                b_map[tiles[num_tiles-1].e] = reverse_bits(tiles[num_tiles-1].e);
-                b_map[tiles[num_tiles-1].n] = reverse_bits(tiles[num_tiles-1].n);
-                b_map[tiles[num_tiles-1].s] = reverse_bits(tiles[num_tiles-1].s);
-
-                b_map[reverse_bits( tiles[num_tiles-1].w) ] = tiles[num_tiles-1].w;
-                b_map[reverse_bits( tiles[num_tiles-1].e) ] = tiles[num_tiles-1].e;
-                b_map[reverse_bits( tiles[num_tiles-1].n) ] = tiles[num_tiles-1].n;
-                b_map[reverse_bits( tiles[num_tiles-1].s) ] = tiles[num_tiles-1].s;
-                if ( tiles_to_idx[tiles[num_tiles-1].w][0] != -1 ) {
-                    if ( tiles_to_idx[tiles[num_tiles-1].w][1] != -1 ) {
-                        printf("seems like this border shows up more than twice o_O\n");
-                        printf("this id: %d, previous ids %d and %d\n", tiles[num_tiles-1].id, tiles[ tiles_to_idx[tiles[num_tiles-1].w][0] ].id, tiles[ tiles_to_idx[tiles[num_tiles-1].w][1] ].id);
-                        return 1;
-                    } 
-                    tiles_to_idx[tiles[num_tiles-1].w][1] = num_tiles-1;
-                } else {
-                    tiles_to_idx[tiles[num_tiles-1].w][0] = num_tiles-1;
+                    tiles[num_tiles-1].borders[S] <<= 1;
+                    tiles[num_tiles-1].borders[S] |= buff[i] == '#';
                 }
 
-                if ( tiles_to_idx[tiles[num_tiles-1].e][0] != -1 ) {
-                    if ( tiles_to_idx[tiles[num_tiles-1].e][1] != -1 ) {
-                        printf("seems like this border shows up more than twice o_O\n");
-                        printf("this id: %d, previous ids %d and %d\n", tiles[num_tiles-1].id, tiles[ tiles_to_idx[tiles[num_tiles-1].e][0] ].id, tiles[ tiles_to_idx[tiles[num_tiles-1].e][1] ].id);
-                        return 1;
-                    } 
-                    tiles_to_idx[tiles[num_tiles-1].e][1] = num_tiles-1;
-                } else {
-                    tiles_to_idx[tiles[num_tiles-1].e][0] = num_tiles-1;
-                }
+                for ( int i = 0; i < 4; i++ ) {
+                    b_map[tiles[num_tiles-1].borders[i]] = reverse_bits(tiles[num_tiles-1].borders[i]);
+                    b_map[reverse_bits( tiles[num_tiles-1].borders[i]) ] = tiles[num_tiles-1].borders[i];
 
-                if ( tiles_to_idx[tiles[num_tiles-1].s][0] != -1 ) {
-                    if ( tiles_to_idx[tiles[num_tiles-1].s][1] != -1 ) {
-                        printf("seems like this border shows up more than twice o_O\n");
-                        printf("this id: %d, previous ids %d and %d\n", tiles[num_tiles-1].id, tiles[ tiles_to_idx[tiles[num_tiles-1].s][0] ].id, tiles[ tiles_to_idx[tiles[num_tiles-1].s][1] ].id);
-                        return 1;
+                    if ( tiles_to_idx[tiles[num_tiles-1].borders[i]][0] != -1 ) {
+                        if ( tiles_to_idx[tiles[num_tiles-1].borders[i]][1] != -1 ) {
+                            printf("seems like this border shows up more than twice o_O\n");
+                            printf("this id: %d, previous ids %d and %d\n",
+                                    tiles[num_tiles-1].id,
+                                    tiles[ tiles_to_idx[tiles[num_tiles-1].borders[i]][0] ].id,
+                                    tiles[ tiles_to_idx[tiles[num_tiles-1].borders[i]][1] ].id);
+                            return 1;
+                        }
+                        tiles_to_idx[tiles[num_tiles-1].borders[i]][1] = num_tiles -1;
+                    } else {
+                        tiles_to_idx[tiles[num_tiles-1].borders[i]][0] = num_tiles -1;
                     }
-                    tiles_to_idx[tiles[num_tiles-1].s][1] = num_tiles-1;
-                } else {
-                    tiles_to_idx[tiles[num_tiles-1].s][0] = num_tiles-1;
                 }
 
-                if ( tiles_to_idx[tiles[num_tiles-1].n][0] != -1 ) {
-                    if ( tiles_to_idx[tiles[num_tiles-1].n][1] != -1 ) {
-                        printf("seems like this border shows up more than twice o_O\n");
-                        printf("this id: %d, previous ids %d and %d\n", tiles[num_tiles-1].id, tiles[ tiles_to_idx[tiles[num_tiles-1].n][0] ].id, tiles[ tiles_to_idx[tiles[num_tiles-1].n][1] ].id);
-                        return 1;
-                    }
-                    tiles_to_idx[tiles[num_tiles-1].n][1] = num_tiles-1;
-                } else {
-                    tiles_to_idx[tiles[num_tiles-1].n][0] = num_tiles-1;
-                }
             } else {
                 for ( int i = 1; i < 9; i++ ) {
                     tiles[num_tiles-1].image[n-1][i-1] = buff[i] == '#';
@@ -229,368 +196,37 @@ int main() {
     tiles[0].seen = 1;
     while ( qst != qend ) {
         int tile_idx = deq[qst++];
-        int fit1 = 1;
-        int fit2 = 1;
-        int fit3 = 1;
-        int fit4 = 1;
-start_s:
-        if ( fit1 && tiles_to_idx[ tiles[tile_idx].s ][0] >= 0 && tiles_to_idx[ tiles[tile_idx].s ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].s_idx = tiles_to_idx[ tiles[tile_idx].s ][0];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].s ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].s ][0] ].n != tiles[tile_idx].s ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].s ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].s ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    //well fuck, this one actually doesn't fit
-                    fit1 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].s_idx = -1;
-                    goto start_s;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].s ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].s ][0];
-            }
-        } else if ( fit2 && tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].s ] ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].s_idx = tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] ].n != tiles[tile_idx].s ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit2 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].s_idx = -1;
-                    goto start_s;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].s] ][0];
-            }
-        } else if ( fit3 && tiles_to_idx[ tiles[tile_idx].s ][1] >= 0 && tiles_to_idx[ tiles[tile_idx].s ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].s_idx = tiles_to_idx[ tiles[tile_idx].s ][1];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].s ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].s ][1] ].n != tiles[tile_idx].s ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].s ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].s ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit3 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].s_idx = -1;
-                    goto start_s;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].s ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].s ][1];
-            }
-        } else if ( fit4 && tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].s ] ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].s_idx = tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] ].n != tiles[tile_idx].s ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit4 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].s_idx = -1;
-                    goto start_s;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].s ] ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].s] ][1];
-            }
-        }
+        for ( int i = 0; i < 4; i++ ) {
+            int brdrs[2];
+            brdrs[0] = tiles[tile_idx].borders[i];
+            brdrs[1] = b_map[ tiles[tile_idx].borders[i] ];
+            for ( int k = 0; k < 2; k++ ) {
+                for ( int j = 0; j < 2; j++ ) {
+                    if ( tiles_to_idx[ brdrs[k] ][j] >= 0 && tiles_to_idx[ brdrs[k] ][j] != tile_idx ) {
+                        tiles[tile_idx].ncnt++;
+                        tiles[tile_idx].neighbor_idx[i] = tiles_to_idx[ brdrs[k] ][j];
+                        tile_t *other = &tiles[ tiles_to_idx[ brdrs[k] ][j] ];
 
-        fit1 = 1;
-        fit2 = 1;
-        fit3 = 1;
-        fit4 = 1;
-start_n:
-        if ( fit1 && tiles_to_idx[ tiles[tile_idx].n ][0] >= 0 && tiles_to_idx[ tiles[tile_idx].n ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].n_idx = tiles_to_idx[ tiles[tile_idx].n ][0];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].n ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].n ][0] ].s != tiles[tile_idx].n ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].n ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].n ][0] ]);
+                        if ( other->seen == 0 ) {
+                            n = 0;
+                            while ( n < 8 && other->borders[ (i+2) % 4 ] != tiles[tile_idx].borders[i] ) {
+                                rotate_tile(other);
+                                n++;
+                                if ( n == 4 ) {
+                                    flip_tile(other);
+                                }
+                            }
+                            if ( n == 8 ) {
+                                //well fuck, this one actually doesn't fit
+                                tiles[tile_idx].ncnt--;
+                                tiles[tile_idx].neighbor_idx[i] = -1;
+                                continue;
+                            }
+                            other->seen = 1;
+                            deq[qend++] = tiles_to_idx[ brdrs[k] ][j];
+                        }
                     }
                 }
-                if ( n == 8 ) {
-                    fit1 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].n_idx = -1;
-                    goto start_n;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].n ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].n ][0];
-            }
-        } else if ( fit2 && tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].n ] ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].n_idx = tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] ].s != tiles[tile_idx].n ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit2 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].n_idx = -1;
-                    goto start_n;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].n] ][0];
-            }
-        } else if ( fit3 && tiles_to_idx[ tiles[tile_idx].n ][1] >= 0 && tiles_to_idx[ tiles[tile_idx].n ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].n_idx = tiles_to_idx[ tiles[tile_idx].n ][1];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].n ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].n ][1] ].s != tiles[tile_idx].n ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].n ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].n ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit3 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].n_idx = -1;
-                    goto start_n;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].n ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].n ][1];
-            }
-        } else if ( fit4 && tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].n ] ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].n_idx = tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] ].s != tiles[tile_idx].n ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit4 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].n_idx = -1;
-                    goto start_n;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].n ] ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].n] ][1];
-            }
-        }
-
-        fit1 = 1;
-        fit2 = 1;
-        fit3 = 1;
-        fit4 = 1;
-start_e:
-        if ( fit1 && tiles_to_idx[ tiles[tile_idx].e ][0] >= 0 && tiles_to_idx[ tiles[tile_idx].e ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].e_idx = tiles_to_idx[ tiles[tile_idx].e ][0];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].e ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].e ][0] ].w != tiles[tile_idx].e ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].e ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].e ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit1 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].e_idx = -1;
-                    goto start_e;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].e ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].e ][0];
-            }
-        } else if ( fit2 && tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].e ] ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].e_idx = tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] ].w != tiles[tile_idx].e ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit2 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].e_idx = -1;
-                    goto start_e;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].e] ][0];
-            }
-        } else if ( fit3 && tiles_to_idx[ tiles[tile_idx].e ][1] >= 0 && tiles_to_idx[ tiles[tile_idx].e ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].e_idx = tiles_to_idx[ tiles[tile_idx].e ][1];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].e ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].e ][1] ].w != tiles[tile_idx].e ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].e ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].e ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit3 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].e_idx = -1;
-                    goto start_e;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].e ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].e ][1];
-            }
-        } else if ( fit4 && tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].e ] ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].e_idx = tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] ].w != tiles[tile_idx].e ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit4 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].e_idx = -1;
-                    goto start_e;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].e ] ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].e] ][1];
-            }
-        }
-
-        fit1 = 1;
-        fit2 = 1;
-        fit3 = 1;
-        fit4 = 1;
-start_w:
-        if ( fit1 && tiles_to_idx[ tiles[tile_idx].w ][0] >= 0 && tiles_to_idx[ tiles[tile_idx].w ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].w_idx = tiles_to_idx[ tiles[tile_idx].w ][0];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].w ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].w ][0] ].e != tiles[tile_idx].w ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].w ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].w ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit1 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].w_idx = -1;
-                    goto start_w;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].w ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].w ][0];
-            }
-        } else if ( fit2 && tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].w ] ][0] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].w_idx = tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] ].e != tiles[tile_idx].w ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit2 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].w_idx = -1;
-                    goto start_w;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][0] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].w] ][0];
-            }
-        } else if ( fit3 && tiles_to_idx[ tiles[tile_idx].w ][1] >= 0 && tiles_to_idx[ tiles[tile_idx].w ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-            tiles[tile_idx].w_idx = tiles_to_idx[ tiles[tile_idx].w ][1];
-            if ( tiles[ tiles_to_idx[ tiles[tile_idx].w ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ tiles[tile_idx].w ][1] ].e != tiles[tile_idx].w ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].w ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ tiles[tile_idx].w ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit3 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].w_idx = -1;
-                    goto start_w;
-                }
-                tiles[ tiles_to_idx[ tiles[tile_idx].w ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ tiles[tile_idx].w ][1];
-            }
-        } else if ( fit4 && tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] >= 0 && tiles_to_idx[ b_map [ tiles[tile_idx].w ] ][1] != tile_idx ) {
-            tiles[tile_idx].ncnt++;
-             tiles[tile_idx].w_idx = tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1];
-            if ( tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] ].seen == 0 ) {
-                n = 0;
-                while ( n < 8 && tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] ].e != tiles[tile_idx].w ) {
-                    rotate_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] ]);
-                    n++;
-                    if ( n == 4 ) {
-                        flip_tile(&tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] ]);
-                    }
-                }
-                if ( n == 8 ) {
-                    fit4 = 0;
-                    tiles[tile_idx].ncnt--;
-                    tiles[tile_idx].w_idx = -1;
-                    goto start_w;
-                }
-                tiles[ tiles_to_idx[ b_map[ tiles[tile_idx].w ] ][1] ].seen = 1;
-                deq[qend++] = tiles_to_idx[ b_map[ tiles[tile_idx].w] ][1];
             }
         }
 
@@ -602,7 +238,7 @@ start_w:
     for ( int i = 0; i < num_tiles; i++ ) {
         if ( tiles[i].ncnt == 2 ) {
             mul *= tiles[i].id;
-            if ( tiles[i].n_idx == -1 && tiles[i].w_idx == -1 ) {
+            if ( tiles[i].neighbor_idx[N] == -1 && tiles[i].neighbor_idx[W] == -1 ) {
                 nw_corner = i;
             }
         }
@@ -619,9 +255,9 @@ start_w:
                     image[big_y*8 + y][big_x*8 + x] = tiles[this_col].image[y][x];
                 }
             }
-            this_col = tiles[this_col].e_idx;
+            this_col = tiles[this_col].neighbor_idx[E];
        }
-       this_row = tiles[this_row].s_idx;
+       this_row = tiles[this_row].neighbor_idx[S];
 //    print_image(image);
     }
 
