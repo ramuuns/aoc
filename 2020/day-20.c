@@ -200,6 +200,7 @@ int main() {
             int brdrs[2];
             brdrs[0] = tiles[tile_idx].borders[i];
             brdrs[1] = b_map[ tiles[tile_idx].borders[i] ];
+            int found = 0;
             for ( int k = 0; k < 2; k++ ) {
                 for ( int j = 0; j < 2; j++ ) {
                     if ( tiles_to_idx[ brdrs[k] ][j] >= 0 && tiles_to_idx[ brdrs[k] ][j] != tile_idx ) {
@@ -218,15 +219,19 @@ int main() {
                             }
                             if ( n == 8 ) {
                                 //well fuck, this one actually doesn't fit
+                                printf("got to the well fuck block\n");
                                 tiles[tile_idx].ncnt--;
                                 tiles[tile_idx].neighbor_idx[i] = -1;
                                 continue;
                             }
                             other->seen = 1;
                             deq[qend++] = tiles_to_idx[ brdrs[k] ][j];
+                            found = 1;
+                            break;
                         }
                     }
                 }
+                if ( found ) { break; }
             }
         }
 
