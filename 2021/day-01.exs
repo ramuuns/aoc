@@ -2,9 +2,11 @@ defmodule Day1 do
   def run(mode) do
     data = read_input(mode)
 
-    data |> part_1() |> IO.inspect()
-
-    data |> part_2() |> IO.inspect()
+    start = :erlang.system_time(:microsecond)
+    data |> fancy_part1() |> IO.puts()
+    data |> fancy_part2() |> IO.puts()
+    finish = :erlang.system_time(:microsecond)
+    "took #{finish - start}ms" |> IO.puts()
   end
 
   def read_input(:test) do
@@ -32,33 +34,18 @@ defmodule Day1 do
     |> Enum.map(fn n -> n |> String.trim() |> String.to_integer() end)
   end
 
-  def part_1([first | data]) do
-    {_, cnt} =
-      data
-      |> Enum.reduce({first, 0}, fn n, {p, cnt} ->
-        if n > p do
-          {n, cnt + 1}
-        else
-          {n, cnt}
-        end
-      end)
+  def fancy_part1([h | tail]), do: fancy_part1(tail, {h, 0})
+  def fancy_part1([], {_, cnt}), do: cnt
+  def fancy_part1([h | tail], {p, cnt}) when h > p, do: fancy_part1(tail, {h, cnt + 1})
+  def fancy_part1([h | tail], {_, cnt}), do: fancy_part1(tail, {h, cnt})
 
-    cnt
-  end
+  def fancy_part2([one, two, three | tail]), do: fancy_part2(tail, {one, two, three, 0})
+  def fancy_part2([], {_, _, _, cnt}), do: cnt
 
-  def part_2([first, second, third | data]) do
-    {_, _, _, cnt} =
-      data
-      |> Enum.reduce({first, second, third, 0}, fn n, {p1, p2, p3, cnt} ->
-        if n > p1 do
-          {p2, p3, n, cnt + 1}
-        else
-          {p2, p3, n, cnt}
-        end
-      end)
+  def fancy_part2([h | tail], {p1, p2, p3, cnt}) when h > p1,
+    do: fancy_part2(tail, {p2, p3, h, cnt + 1})
 
-    cnt
-  end
+  def fancy_part2([h | tail], {_, p2, p3, cnt}), do: fancy_part2(tail, {p2, p3, h, cnt})
 end
 
 Day1.run(:test)
