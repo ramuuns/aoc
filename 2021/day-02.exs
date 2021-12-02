@@ -28,13 +28,18 @@ forward 2"
 
   def prepare_data(data) do
     data
-    |> Enum.map(fn s ->
-      [dir, amount] =
-        s
-        |> String.split(" ")
+    |> Enum.map(&String.trim/1)
+    |> Enum.map(fn
+      "forward " <> amount ->
+        {:forward, amount}
 
-      {String.to_atom(dir), amount |> String.trim() |> String.to_integer()}
+      "up " <> amount ->
+        {:up, amount}
+
+      "down " <> amount ->
+        {:down, amount}
     end)
+    |> Enum.map(fn {dir, amount} -> {dir, amount |> String.to_integer()} end)
   end
 
   def part1(data), do: part1(data, {0, 0})
