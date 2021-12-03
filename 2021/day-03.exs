@@ -75,38 +75,22 @@ defmodule Day3 do
 
   def part2(data) do
     ox_gen_rating = data |> rating([], :ox)
-
     co_scr_rating = data |> rating([], :co2)
-
     ox_gen_rating * co_scr_rating
   end
 
   def rating([item | []], filtered, _),
     do: (filtered |> Enum.reverse()) ++ item |> string_list_to_binary(0)
 
-  def rating(list, filtered, :ox) do
-    {ones, zeroes} = list |> ozcount({0, 0})
-
-    if ones >= zeroes do
-      filtered_list = list |> filter_list("1", [])
-      rating(filtered_list, ["1" | filtered], :ox)
-    else
-      filtered_list = list |> filter_list("0", [])
-      rating(filtered_list, ["0" | filtered], :ox)
-    end
+  def rating(list, filtered, mode) do
+    filter = get_filter(mode, list |> ozcount({0,0}))
+    rating(list |> filter_list(filter, []) , [filter | filtered], mode)
   end
 
-  def rating(list, filtered, :co2) do
-    {ones, zeroes} = list |> ozcount({0, 0})
-
-    if zeroes <= ones do
-      filtered_list = list |> filter_list("0", [])
-      rating(filtered_list, ["0" | filtered], :co2)
-    else
-      filtered_list = list |> filter_list("1", [])
-      rating(filtered_list, ["1" | filtered], :co2)
-    end
-  end
+  def get_filter(:ox, {ones, zeroes}) when ones >= zeroes, do: "1"
+  def get_filter(:ox, _), do: "0"
+  def get_filter(:co2, {ones, zeroes}) when zeroes <= ones, do: "0"
+  def get_filter(:co2, _), do: "1"
 
   def filter_list([], _, ret), do: ret
   def filter_list([[h | rest] | list], h, ret), do: filter_list(list, h, [rest | ret])
