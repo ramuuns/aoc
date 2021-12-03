@@ -56,11 +56,13 @@ defmodule Day3 do
   def to_binary(list, cnt, variety), do: to_binary(list, cnt / 2, variety, 0)
   def to_binary([], _, _, n), do: n
 
-  def to_binary([f | t], cnt, :normal, n),
-    do: to_binary(t, cnt, :normal, n <<< 1 ||| if f > cnt do 1 else 0 end )
+  def to_binary([f | t], cnt, :normal, n) when f > cnt,
+    do: to_binary(t, cnt, :normal, n <<< 1 ||| 1)
 
-  def to_binary([f | t], cnt, :not, n),
-    do: to_binary(t, cnt, :not, n <<< 1 ||| if f < cnt do 1 else 0 end )
+  def to_binary([_ | t], cnt, :normal, n), do: to_binary(t, cnt, :normal, n <<< 1)
+
+  def to_binary([f | t], cnt, :not, n) when f < cnt, do: to_binary(t, cnt, :not, n <<< 1 ||| 1)
+  def to_binary([_ | t], cnt, :not, n), do: to_binary(t, cnt, :not, n <<< 1)
 
   def string_list_to_binary([], n), do: n
   def string_list_to_binary(["1" | tail], n), do: string_list_to_binary(tail, n <<< 1 ||| 1)
@@ -72,35 +74,48 @@ defmodule Day3 do
     do: gen_freq_list(t, {count_items(h, freq_list, []), cnt + 1})
 
   def part2(data) do
-    ox_gen_rating =
-      data |> filter_data(0, gen_freq_list(data, {[], 0}), :normal) |> string_list_to_binary(0)
+    ox_gen_rating = data |> rating([], :ox)
 
-    co_scr_rating =
-      data |> filter_data(0, gen_freq_list(data, {[], 0}), :not) |> string_list_to_binary(0)
+    co_scr_rating = data |> rating([], :co2)
 
     ox_gen_rating * co_scr_rating
   end
 
-  def filter_data([item | []], _, _, _), do: item
+  def rating([item | []], filtered, _),
+    do: (filtered |> Enum.reverse()) ++ item |> string_list_to_binary(0)
 
-  def filter_data(data, at, {freq_list, cnt}, mode) do
-    h_cnt = cnt / 2
+  def rating(list, filtered, :ox) do
+    {ones, zeroes} = list |> ozcount({0, 0})
 
-    filtered =
-      data
-      |> Enum.filter(fn num ->
-        n = num |> Enum.at(at)
-        f = freq_list |> Enum.at(at)
-
-        if mode == :normal do
-          (n == "1" and f >= h_cnt) or (n == "0" and f < h_cnt)
-        else
-          (n == "0" and f >= h_cnt) or (n == "1" and f < h_cnt)
-        end
-      end)
-
-    filter_data(filtered, at + 1, gen_freq_list(filtered, {[], 0}), mode)
+    if ones >= zeroes do
+      filtered_list = list |> filter_list("1", [])
+      rating(filtered_list, ["1" | filtered], :ox)
+    else
+      filtered_list = list |> filter_list("0", [])
+      rating(filtered_list, ["0" | filtered], :ox)
+    end
   end
+
+  def rating(list, filtered, :co2) do
+    {ones, zeroes} = list |> ozcount({0, 0})
+
+    if zeroes <= ones do
+      filtered_list = list |> filter_list("0", [])
+      rating(filtered_list, ["0" | filtered], :co2)
+    else
+      filtered_list = list |> filter_list("1", [])
+      rating(filtered_list, ["1" | filtered], :co2)
+    end
+  end
+
+  def filter_list([], _, ret), do: ret
+  def filter_list([[h | rest] | list], h, ret), do: filter_list(list, h, [rest | ret])
+  def filter_list([_ | list], h, ret), do: filter_list(list, h, ret)
+
+  def ozcount([], cnt), do: cnt
+  def ozcount([["1" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones + 1, zeroes})
+  def ozcount([["0" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones, zeroes + 1})
+
 end
 
 Day3.run(:test)
