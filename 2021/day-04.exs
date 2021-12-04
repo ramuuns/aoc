@@ -6,7 +6,7 @@ defmodule Day4 do
     data |> part1() |> IO.puts()
     data |> part2() |> IO.puts()
     finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}us" |> IO.puts()
+    "took #{finish - start}μs" |> IO.puts()
   end
 
   def read_input(:test) do
@@ -81,75 +81,65 @@ defmodule Day4 do
         row
       )
 
-  def part1({numbers, boards}) do
-    {winning_board, num} = draw_next_number_until_bingo(numbers, boards)
+  def calc_sum({board, num}) do
     num = String.to_integer(num)
 
     unmarked_sum =
-      winning_board.num_coords
+      board.num_coords
       |> Map.keys()
       |> Enum.reduce(0, fn n, acc -> acc + String.to_integer(n) end)
 
     num * unmarked_sum
   end
 
-  def draw_next_number_until_bingo([num | rest_of_nums], boards) do
-    {boards, has_bingo?, bingo_board} = check_for_bingo(boards, num, {[], false, nil})
-
-    if has_bingo? do
-      {bingo_board, num}
-    else
-      draw_next_number_until_bingo(rest_of_nums, boards)
-    end
-  end
-
-  def check_for_bingo([], _, acc), do: acc
-
-  def check_for_bingo([board | rest_of_boards], num, {boards, had_bingo, winning_board}) do
-    {board, has_bingo?} =
-      if Map.has_key?(board.num_coords, num) do
-        {{row, col}, num_coords} = Map.pop!(board.num_coords, num)
-        rw = board.rows[row] - 1
-        cl = board.cols[col] - 1
-        has_bingo? = rw == 0 or cl == 0
-
-        {%{
-           num_coords: num_coords,
-           rows: board.rows |> Map.put(row, rw),
-           cols: board.cols |> Map.put(col, cl)
-         }, has_bingo?}
-      else
-        {board, false}
-      end
-
-    if has_bingo? do
-      check_for_bingo(rest_of_boards, num, {boards, true, board})
-    else
-      check_for_bingo(rest_of_boards, num, {[board | boards], had_bingo, winning_board})
-    end
+  def part1({numbers, boards}) do
+    numbers
+    |> draw_next_number(:first, {boards, false, 0, nil})
+    |> calc_sum
   end
 
   def part2({numbers, boards}) do
-    {losing_board, num} = draw_next_number_until_last_bingo(numbers, boards)
-    num = String.to_integer(num)
-
-    unmarked_sum =
-      losing_board.num_coords
-      |> Map.keys()
-      |> Enum.reduce(0, fn n, acc -> acc + String.to_integer(n) end)
-
-    num * unmarked_sum
+    numbers
+    |> draw_next_number(:last, {boards, false, 0, nil})
+    |> calc_sum
   end
 
-  def draw_next_number_until_last_bingo([num | rest_of_nums], boards) do
-    {boards, has_bingo?, bingo_board} = check_for_bingo(boards, num, {[], false, nil})
+  def draw_next_number(_, :last, {[], _, prev_num, last_board}), do: {last_board, prev_num}
+  def draw_next_number(_, :first, {_, true, prev_num, last_board}), do: {last_board, prev_num}
 
-    if has_bingo? and Enum.empty?(boards) do
-      {bingo_board, num}
-    else
-      draw_next_number_until_last_bingo(rest_of_nums, boards)
-    end
+  def draw_next_number([num | rest_of_nums], mode, {boards, _, _, _}),
+    do: draw_next_number(rest_of_nums, mode, check_for_bingo(boards, {[], false, num, nil}))
+
+  def check_for_bingo([], acc), do: acc
+
+  def check_for_bingo(
+        [%{num_coords: num_coords} = board | rest_of_boards],
+        {boards, had_bingo, num, winning_board}
+      )
+      when is_map_key(num_coords, num) do
+    {{row, col}, num_coords} = Map.pop!(num_coords, num)
+    rw = board.rows[row] - 1
+    cl = board.cols[col] - 1
+    has_bingo? = rw == 0 or cl == 0
+
+    board = %{
+      num_coords: num_coords,
+      rows: board.rows |> Map.put(row, rw),
+      cols: board.cols |> Map.put(col, cl)
+    }
+
+    check_for_bingo(
+      rest_of_boards,
+      if has_bingo? do
+        {boards, true, num, board}
+      else
+        {[board | boards], had_bingo, num, winning_board}
+      end
+    )
   end
+
+  def check_for_bingo([board | rest_of_boards], {boards, had_bingo, num, winning_board}),
+    do: check_for_bingo(rest_of_boards, {[board | boards], had_bingo, num, winning_board})
 end
 
 Day4.run(:test)
