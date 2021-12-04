@@ -1,12 +1,12 @@
 defmodule Day2 do
   def run(mode) do
+    start = :erlang.system_time(:microsecond)
     data = read_input(mode)
 
-    start = :erlang.system_time(:microsecond)
     data |> part1() |> IO.puts()
     data |> part2() |> IO.puts()
     finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}us" |> IO.puts()
+    "took #{finish - start}μs" |> IO.puts()
   end
 
   def read_input(:test) do

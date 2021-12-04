@@ -2,13 +2,13 @@ defmodule Day3 do
   use Bitwise
 
   def run(mode) do
+    start = :erlang.system_time(:microsecond)
     data = read_input(mode)
 
-    start = :erlang.system_time(:microsecond)
     data |> part1() |> IO.puts()
     data |> part2() |> IO.puts()
     finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}us" |> IO.puts()
+    "took #{finish - start}μs" |> IO.puts()
   end
 
   def read_input(:test) do
@@ -79,18 +79,24 @@ defmodule Day3 do
     ox_gen_rating * co_scr_rating
   end
 
-  def rating([item | []], filtered, _),
-    do: (filtered |> Enum.reverse()) ++ item |> string_list_to_binary(0)
+  def rating([item], filtered, _),
+    do: ((filtered |> Enum.reverse()) ++ item) |> string_list_to_binary(0)
 
   def rating(list, filtered, mode) do
-    filter = get_filter(mode, list |> ozcount({0,0}))
-    rating(list |> filter_list(filter, []) , [filter | filtered], mode)
+    filter =
+      list
+      |> ozcount({0, 0})
+      |> get_filter(mode)
+
+    list
+    |> filter_list(filter, [])
+    |> rating([filter | filtered], mode)
   end
 
-  def get_filter(:ox, {ones, zeroes}) when ones >= zeroes, do: "1"
-  def get_filter(:ox, _), do: "0"
-  def get_filter(:co2, {ones, zeroes}) when zeroes <= ones, do: "0"
-  def get_filter(:co2, _), do: "1"
+  def get_filter({ones, zeroes}, :ox) when ones >= zeroes, do: "1"
+  def get_filter(_, :ox), do: "0"
+  def get_filter({ones, zeroes}, :co2) when zeroes <= ones, do: "0"
+  def get_filter(_, :co2), do: "1"
 
   def filter_list([], _, ret), do: ret
   def filter_list([[h | rest] | list], h, ret), do: filter_list(list, h, [rest | ret])
@@ -99,7 +105,6 @@ defmodule Day3 do
   def ozcount([], cnt), do: cnt
   def ozcount([["1" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones + 1, zeroes})
   def ozcount([["0" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones, zeroes + 1})
-
 end
 
 Day3.run(:test)
