@@ -24,11 +24,24 @@ defmodule Day6 do
     |> prepare_data
   end
 
-  def prepare_data(data), do: prepare_data(data, %{"8" => 0, "7" => 0, "6" => 0, "5" => 0, "4" => 0, "3" => 0, "2" => 0, "1" => 0, "0" => 0})
+  def prepare_data(data),
+    do:
+      prepare_data(data, %{
+        "8" => 0,
+        "7" => 0,
+        "6" => 0,
+        "5" => 0,
+        "4" => 0,
+        "3" => 0,
+        "2" => 0,
+        "1" => 0,
+        "0" => 0
+      })
+
   def prepare_data([], acc), do: acc
 
   def prepare_data([fish | rest], acc) do
-    rest 
+    rest
     |> prepare_data(
       acc
       |> Map.put(
@@ -42,7 +55,7 @@ defmodule Day6 do
   def part2(fish_map), do: simulate_next_day(fish_map, 256)
 
   def simulate_next_day(fish_map, 0), do: fish_map |> Map.values() |> Enum.sum()
-  
+
   def simulate_next_day(fish_map, d) do
     %{
       "8" => fish_map["0"],
@@ -54,9 +67,9 @@ defmodule Day6 do
       "2" => fish_map["3"],
       "1" => fish_map["2"],
       "0" => fish_map["1"]
-    } |> simulate_next_day(d - 1)
+    }
+    |> simulate_next_day(d - 1)
   end
-
 end
 
 Day6.run(:test)
