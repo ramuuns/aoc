@@ -38,7 +38,8 @@ defmodule Day6 do
         "0" => 0
       })
 
-  def prepare_data([], acc), do: acc
+  def prepare_data([], acc),
+    do: [acc["0"], acc["1"], acc["2"], acc["3"], acc["4"], acc["5"], acc["6"], acc["7"], acc["8"]]
 
   def prepare_data([fish | rest], acc) do
     rest
@@ -51,25 +52,20 @@ defmodule Day6 do
     )
   end
 
-  def part1(fish_map), do: simulate_next_day(fish_map, 80)
-  def part2(fish_map), do: simulate_next_day(fish_map, 256)
+  def part1(fish_list), do: simulate_next_day(fish_list, 80)
+  def part2(fish_list), do: simulate_next_day(fish_list, 256)
 
-  def simulate_next_day(fish_map, 0), do: fish_map |> Map.values() |> Enum.sum()
+  def simulate_next_day(fish_list, 0), do: fish_list |> Enum.sum()
 
-  def simulate_next_day(fish_map, d) do
-    %{
-      "8" => fish_map["0"],
-      "7" => fish_map["8"],
-      "6" => fish_map["7"] + fish_map["0"],
-      "5" => fish_map["6"],
-      "4" => fish_map["5"],
-      "3" => fish_map["4"],
-      "2" => fish_map["3"],
-      "1" => fish_map["2"],
-      "0" => fish_map["1"]
-    }
+  def simulate_next_day([zero | fish_list], d) do
+    fish_list
+    |> do_one_day(zero, 0, [])
     |> simulate_next_day(d - 1)
   end
+
+  def do_one_day([], zero, _, next_day), do: [zero | next_day] |> Enum.reverse()
+  def do_one_day([h | t], zero, 6, next_day), do: do_one_day(t, zero, 7, [h + zero | next_day])
+  def do_one_day([h | t], zero, n, next_day), do: do_one_day(t, zero, n + 1, [h | next_day])
 end
 
 Day6.run(:test)
