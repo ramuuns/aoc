@@ -46,7 +46,9 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
   end
 
   def part2(data) do
-    decode_and_sum_the_values(data, 0)
+    data
+    |> Task.async_stream(&do_one_row/1)
+    |> Enum.reduce(0, fn {:ok, rowsum}, sum -> sum + rowsum end)
   end
 
   def count_fancy_digits([], cnt), do: cnt
@@ -61,117 +63,59 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
 
   def count_fancy_in_list([_ | rest], cnt), do: count_fancy_in_list(rest, cnt)
 
-  def decode_and_sum_the_values([], sum), do: sum
-
-  def decode_and_sum_the_values([row | rest], sum),
-    do: decode_and_sum_the_values(rest, do_one_row(row, sum))
-
-  def do_one_row({use_this_to_figure_out, output}, sum) do
-    sum +
-      (use_this_to_figure_out
-       |> build_decoder()
-       |> decode_output(output))
+  def do_one_row({input, output}) do
+    input
+    |> build_decoder()
+    |> decode_output(output)
   end
+
+  def string_to_set(string), do: string |> String.split("", trim: true) |> MapSet.new()
 
   def build_decoder(input) do
     {non_simple, simple_decoder} = decode_simple(input, {[], %{}})
-    reverse_map = simple_decoder |> Enum.reduce(%{}, fn {k, v}, acc -> acc |> Map.put(v, k) end)
 
-    one_chars =
-      Map.get(reverse_map, 1)
-      |> String.split("")
-      |> Enum.filter(fn n -> n != "" end)
-      |> MapSet.new()
-
-    {three, non_simple} =
-      non_simple
-      |> Enum.reduce({nil, []}, fn
-        str, {nil, rest} when byte_size(str) == 5 ->
-          if one_chars
-             |> MapSet.subset?(
-               str
-               |> String.split("")
-               |> Enum.filter(fn n -> n != "" end)
-               |> MapSet.new()
-             ) do
-            {str, rest}
-          else
-            {nil, [str | rest]}
-          end
-
-        str, {three, rest} ->
-          {three, [str | rest]}
-      end)
-
-    magic_four_chars =
-      Map.get(reverse_map, 4)
-      |> String.split("")
-      |> Enum.filter(fn n -> n != "" end)
-      |> MapSet.new()
-      |> MapSet.difference(one_chars)
-
-    {five, non_simple} =
-      non_simple
-      |> Enum.reduce({nil, []}, fn
-        str, {nil, rest} when byte_size(str) == 5 ->
-          if magic_four_chars
-             |> MapSet.subset?(
-               str
-               |> String.split("")
-               |> Enum.filter(fn n -> n != "" end)
-               |> MapSet.new()
-             ) do
-            {str, rest}
-          else
-            {nil, [str | rest]}
-          end
-
-        str, {five, rest} ->
-          {five, [str | rest]}
-      end)
-
-    {two, non_simple} =
-      non_simple
-      |> Enum.reduce({nil, []}, fn
-        str, {nil, rest} when byte_size(str) == 5 -> {str, rest}
-        str, {five, rest} -> {five, [str | rest]}
-      end)
-
-    {six, non_simple} =
-      non_simple
-      |> Enum.reduce({nil, []}, fn
-        str, {nil, rest} ->
-          if one_chars
-             |> MapSet.subset?(
-               str
-               |> String.split("")
-               |> Enum.filter(fn n -> n != "" end)
-               |> MapSet.new()
-             ) do
-            {nil, [str | rest]}
-          else
-            {str, rest}
-          end
-
-        str, {s, rest} ->
-          {s, [str | rest]}
-      end)
-
-    {nine, zero} =
-      non_simple
+    {one_chars, four_chars} =
+      simple_decoder
       |> Enum.reduce({nil, nil}, fn
-        str, {n, z} ->
-          if magic_four_chars
-             |> MapSet.subset?(
-               str
-               |> String.split("")
-               |> Enum.filter(fn n -> n != "" end)
-               |> MapSet.new()
-             ) do
-            {str, z}
-          else
-            {n, str}
+        {k, v}, {_, four} when v == 1 -> {k, four}
+        {k, v}, {one, _} when v == 4 -> {one, k}
+        _, acc -> acc
+      end)
+
+    one_chars = one_chars |> string_to_set
+    magic_four_chars = four_chars |> string_to_set |> MapSet.difference(one_chars)
+
+    {len_six, len_five} =
+      non_simple
+      |> Enum.reduce({[], []}, fn
+        str, {len_six, len_five} when byte_size(str) == 5 -> {len_six, [str | len_five]}
+        str, {len_six, len_five} -> {[str | len_six], len_five}
+      end)
+
+    {two, three, five} =
+      len_five
+      |> Enum.reduce({nil, nil, nil}, fn
+        str, {two, three, five} ->
+          cond do
+            one_chars |> MapSet.subset?(str |> string_to_set) -> {two, str, five}
+            magic_four_chars |> MapSet.subset?(str |> string_to_set) -> {two, three, str}
+            true -> {str, three, five}
           end
+      end)
+
+    {six, nine, zero} =
+      len_six
+      |> Enum.reduce({nil, nil, nil}, fn str, {six, nine, zero} ->
+        cond do
+          four_chars |> string_to_set() |> MapSet.subset?(str |> string_to_set) ->
+            {six, str, zero}
+
+          one_chars |> MapSet.subset?(str |> string_to_set) ->
+            {six, nine, str}
+
+          true ->
+            {str, nine, zero}
+        end
       end)
 
     simple_decoder
