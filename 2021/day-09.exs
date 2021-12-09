@@ -34,6 +34,9 @@ defmodule Day9 do
 
   def prepare_row(acc, [], _, _), do: acc
 
+  #  skip the nines, we really don't need them
+  def prepare_row(acc, [n | rest], y, x) when n == "9", do: prepare_row(acc, rest, y, x + 1)
+
   def prepare_row(acc, [n | rest], y, x),
     do: acc |> Map.put({x, y}, String.to_integer(n)) |> prepare_row(rest, y, x + 1)
 
@@ -45,7 +48,7 @@ defmodule Day9 do
   def part2(data) do
     data
     |> Map.to_list()
-    |> list_of_basin_sizes([], data, %{})
+    |> list_of_basin_sizes([], data)
     |> Enum.sort(:desc)
     |> Enum.take(3)
     |> Enum.reduce(1, fn n, acc -> acc * n end)
@@ -70,43 +73,34 @@ defmodule Day9 do
     end
   end
 
-  def list_of_basin_sizes([], ret, _, _), do: ret
+  def list_of_basin_sizes([], ret, _), do: ret
 
-  def list_of_basin_sizes([{_, 9} | points], ret, map, seen),
-    do: list_of_basin_sizes(points, ret, map, seen)
+  def list_of_basin_sizes([{point, _} | points], ret, map) when not is_map_key(map, point),
+    do: list_of_basin_sizes(points, ret, map)
 
-  def list_of_basin_sizes([{point, _} | points], ret, map, seen) when is_map_key(seen, point),
-    do: list_of_basin_sizes(points, ret, map, seen)
-
-  def list_of_basin_sizes([{{x, y} = point, _} | points], ret, map, seen) do
-    {seen, basin_size} =
+  def list_of_basin_sizes([{{x, y} = point, _} | points], ret, map) do
+    {map, basin_size} =
       flood_basin(
         [{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}],
-        map,
-        seen |> Map.put(point, 1),
+        map |> Map.delete(point),
         1
       )
 
-    list_of_basin_sizes(points, [basin_size | ret], map, seen)
+    list_of_basin_sizes(points, [basin_size | ret], map)
   end
 
-  def flood_basin([], _, seen, size), do: {seen, size}
+  def flood_basin([], map, size), do: {map, size}
 
-  def flood_basin([point | next], map, seen, size) when is_map_key(seen, point),
-    do: flood_basin(next, map, seen, size)
+  def flood_basin([point | next], map, size) when not is_map_key(map, point),
+    do: flood_basin(next, map, size)
 
-  def flood_basin([{x, y} = point | next], map, seen, size) do
-    if Map.get(map, point, 9) == 9 do
-      flood_basin(next, map, seen, size)
-    else
+  def flood_basin([{x, y} = point | next], map, size),
+    do:
       flood_basin(
         [{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1} | next],
-        map,
-        seen |> Map.put(point, 1),
+        map |> Map.delete(point),
         size + 1
       )
-    end
-  end
 end
 
 Day9.run(:test)
