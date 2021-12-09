@@ -1,10 +1,7 @@
 defmodule Day9 do
   def run(mode) do
     start = :erlang.system_time(:microsecond)
-
     data = read_input(mode)
-    f = :erlang.system_time(:microsecond)
-    "took #{f - start}us to prepare the data" |> IO.puts()
 
     data |> part1() |> IO.puts()
     data |> part2() |> IO.puts()
