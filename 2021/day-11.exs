@@ -77,22 +77,21 @@ defmodule Day11 do
   end
 
   def do_one_turn(map) do
-    map =
-      map
-      |> Enum.reduce({map, []}, fn
-        {coords, 9}, {map, flashcoords} -> {map |> Map.put(coords, 10), [coords | flashcoords]}
-        {coords, v}, {map, fc} -> {map |> Map.put(coords, v + 1), fc}
-      end)
-      |> do_flashes
-
     map
-    |> Enum.reduce({0, map}, fn
-      {coords, v}, {cnt, map} when v > 9 -> {cnt + 1, map |> Map.put(coords, 0)}
-      _, {cnt, map} -> {cnt, map}
-    end)
+    |> Enum.to_list()
+    |> find_flashes([], %{})
+    |> do_flashes
   end
 
-  def do_flashes({map, []}), do: map
+  def find_flashes([], flashcoords, map), do: {map, flashcoords}
+
+  def find_flashes([{coords, 9} | rest], flashcoords, map),
+    do: find_flashes(rest, [coords | flashcoords], map |> Map.put(coords, 10))
+
+  def find_flashes([{coords, v} | rest], flashcoords, map),
+    do: find_flashes(rest, flashcoords, map |> Map.put(coords, v + 1))
+
+  def do_flashes({map, []}), do: map |> Enum.to_list() |> count_flashes(0, map)
 
   def do_flashes({map, [{x, y} | rest]}) do
     [
@@ -105,20 +104,35 @@ defmodule Day11 do
       {x + 1, y},
       {x + 1, y + 1}
     ]
-    |> Enum.filter(fn c -> Map.has_key?(map, c) end)
-    |> Enum.reduce({map, rest}, fn
-      coord, {map, l} ->
-        v = map |> Map.get(coord)
-
-        {map |> Map.put(coord, v + 1),
-         if v == 9 do
-           [coord | l]
-         else
-           l
-         end}
-    end)
+    |> maybe_flash(map, rest)
     |> do_flashes
   end
+
+  def maybe_flash([], map, flashes), do: {map, flashes}
+
+  def maybe_flash([c | rest], map, flashes) when not is_map_key(map, c),
+    do: maybe_flash(rest, map, flashes)
+
+  def maybe_flash([coord | rest], map, flashes) do
+    v = map |> Map.get(coord)
+
+    maybe_flash(
+      rest,
+      map |> Map.put(coord, v + 1),
+      if v == 9 do
+        [coord | flashes]
+      else
+        flashes
+      end
+    )
+  end
+
+  def count_flashes([], cnt, map), do: {cnt, map}
+
+  def count_flashes([{coord, v} | rest], cnt, map) when v > 9,
+    do: count_flashes(rest, cnt + 1, map |> Map.put(coord, 0))
+
+  def count_flashes([{coord, v} | rest], cnt, map), do: count_flashes(rest, cnt, map)
 end
 
 Day11.run(:test)
