@@ -1,13 +1,11 @@
 defmodule Day6 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
-
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    {
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -68,5 +66,3 @@ defmodule Day6 do
   def do_one_day([h | t], zero, n, next_day), do: do_one_day(t, zero, n + 1, [h | next_day])
 end
 
-Day6.run(:test)
-Day6.run(:actual)

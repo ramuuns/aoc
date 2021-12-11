@@ -2,13 +2,12 @@ defmodule Day3 do
   use Bitwise
 
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    { 
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -107,5 +106,3 @@ defmodule Day3 do
   def ozcount([["0" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones, zeroes + 1})
 end
 
-Day3.run(:test)
-Day3.run(:actual)

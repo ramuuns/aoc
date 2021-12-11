@@ -1,13 +1,11 @@
 defmodule Day4 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
-
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    {
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -143,5 +141,3 @@ defmodule Day4 do
     do: check_for_bingo(rest_of_boards, {[board | boards], had_bingo, num, winning_board})
 end
 
-Day4.run(:test)
-Day4.run(:actual)

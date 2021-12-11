@@ -1,12 +1,11 @@
 defmodule Day11 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    {
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -132,8 +131,6 @@ defmodule Day11 do
   def count_flashes([{coord, v} | rest], cnt, map) when v > 9,
     do: count_flashes(rest, cnt + 1, map |> Map.put(coord, 0))
 
-  def count_flashes([{coord, v} | rest], cnt, map), do: count_flashes(rest, cnt, map)
+  def count_flashes([_ | rest], cnt, map), do: count_flashes(rest, cnt, map)
 end
 
-Day11.run(:test)
-Day11.run(:actual)

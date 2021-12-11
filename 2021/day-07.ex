@@ -1,13 +1,11 @@
 defmodule Day7 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
-
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    { 
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -97,5 +95,3 @@ defmodule Day7 do
   def burn(n), do: div(n * (n - 1), 2)
 end
 
-Day7.run(:test)
-Day7.run(:actual)

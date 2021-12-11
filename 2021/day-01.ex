@@ -1,12 +1,11 @@
 defmodule Day1 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
     data = read_input(mode)
 
-    data |> fancy_part1() |> IO.puts()
-    data |> fancy_part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    {
+      data |> fancy_part1(),
+      data |> fancy_part2()
+    }
   end
 
   def read_input(:test) do
@@ -48,5 +47,3 @@ defmodule Day1 do
   def fancy_part2([h | tail], {_, p2, p3, cnt}), do: fancy_part2(tail, {p2, p3, h, cnt})
 end
 
-Day1.run(:test)
-Day1.run(:actual)

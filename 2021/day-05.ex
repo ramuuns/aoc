@@ -1,13 +1,11 @@
 defmodule Day5 do
   def run(mode) do
-    start = :erlang.system_time(:microsecond)
-
     data = read_input(mode)
 
-    data |> part1() |> IO.puts()
-    data |> part2() |> IO.puts()
-    finish = :erlang.system_time(:microsecond)
-    "took #{finish - start}μs" |> IO.puts()
+    { 
+      data |> part1(),
+      data |> part2()
+    }
   end
 
   def read_input(:test) do
@@ -93,5 +91,3 @@ defmodule Day5 do
     do: add_line([x * 1000 + y | points], xrest, yrest, :diag)
 end
 
-Day5.run(:test)
-Day5.run(:actual)
