@@ -52,8 +52,12 @@ defmodule Runner do
     IO.puts("Took #{finish - start}ms (avg: #{div(finish - start, days)}ms per day)")
   end
 
-  def run([arg]) do
-    day = String.to_integer(arg)
+  def run(args) do
+    {day, runmode} =
+      case args do
+        [day] -> {String.to_integer(day), nil}
+        [day, runmode] -> {String.to_integer(day), String.to_atom(runmode)}
+      end
 
     zero_padded_day =
       if day > 9 do
@@ -70,28 +74,31 @@ defmodule Runner do
 
       res =
         [:test, :actual]
+        |> Enum.filter(fn mode -> runmode == nil || runmode == mode end)
         |> Task.async_stream(fn mode ->
           {mode, apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])}
         end)
         |> Enum.map(fn {:ok, res} -> res end)
 
-      [{:test, {testp1, testp2}}, {:actual, {actualp1, actualp2}}] = res
       IO.puts("Day #{day}\n")
-      IO.puts("Test:")
-      IO.puts("Part 1: #{testp1}")
-      IO.puts("Part 2: #{testp2}")
-      IO.puts("\nActual:")
-      IO.puts("Part 1: #{actualp1}")
-      IO.puts("Part 2: #{actualp2}\n")
+
+      res
+      |> Enum.each(fn {mode, {p1, p2}} ->
+        if mode == :test do
+          IO.puts("Test:")
+        else
+          IO.puts("\nActual:")
+        end
+
+        IO.puts("Part 1: #{p1}")
+        IO.puts("Part 2: #{p2}")
+      end)
+
       finish = :erlang.system_time(:microsecond)
       IO.puts("Took #{finish - start}μs")
     else
       IO.puts("this day (#{day}) ain't a thing")
     end
-  end
-
-  def run(_) do
-    IO.puts("run this with the integer day or all to run all days")
   end
 end
 
