@@ -77,7 +77,7 @@ defmodule Runner do
         |> Enum.filter(fn mode -> runmode == nil || runmode == mode end)
         |> Task.async_stream(fn mode ->
           {mode, apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])}
-        end)
+        end, timeout: :infinity)
         |> Enum.map(fn {:ok, res} -> res end)
 
       IO.puts("Day #{day}\n")
