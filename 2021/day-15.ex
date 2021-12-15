@@ -51,8 +51,8 @@ defmodule Day15 do
       grid,
       MapSet.new(),
       {tgtx, tgty},
-      false,
-      {tgtx + 1, tgty + 1}
+      {tgtx + 1, tgty + 1},
+      0
     )
   end
 
@@ -62,8 +62,8 @@ defmodule Day15 do
       grid,
       MapSet.new(),
       {(tgtx + 1) * 5 - 1, (tgty + 1) * 5 - 1},
-      true,
-      {tgtx + 1, tgty + 1}
+      {tgtx + 1, tgty + 1},
+      0
     )
   end
 
@@ -72,85 +72,50 @@ defmodule Day15 do
         grid,
         seen,
         {tgtx, tgty} = tgt,
-        expand?,
-        {orig_sizex, orig_sizey} = size
+        {orig_sizex, orig_sizey} = size,
+        states
       ) do
     {{weight, {x, y} = coord}, pq} = pq |> PriorityQueue.pop_next()
 
     cond do
-      MapSet.member?(seen, coord) ->
-        a_star_this_sucker(pq, grid, seen, tgt, expand?, size)
+      MapSet.member?(seen, x * 1000 + y) ->
+        a_star_this_sucker(pq, grid, seen, tgt, size, states + 1)
 
       x == tgtx and y == tgty ->
+        "states: #{states}" |> IO.puts()
         weight
 
       true ->
-        grid =
-          if expand? do
-            [{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}]
-            |> Enum.reduce(grid, fn
-              c, grid when is_map_key(grid, c) ->
-                grid
+        [{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}]
+        |> Enum.filter(fn
+          {x, y} when x >= 0 and y >= 0 and x <= tgtx and y <= tgty ->
+            not MapSet.member?(seen, x * 1000 + y)
 
-              {-1, _}, grid ->
-                grid
-
-              {_, -1}, grid ->
-                grid
-
-              {x, _}, grid when x == tgtx + 1 ->
-                grid
-
-              {_, y}, grid when y == tgty + 1 ->
-                grid
-
-              {x, y} = c, grid ->
-                grid
-                |> Map.put(
-                  c,
+          _ ->
+            false
+        end)
+        |> Enum.reduce(pq, fn
+          {x, y} = c, pq ->
+            val =
+              case grid[c] do
+                nil ->
                   rem(
                     grid[{rem(x, orig_sizex), rem(y, orig_sizey)}] + div(x, orig_sizex) +
                       div(y, orig_sizey) - 1,
                     9
                   ) + 1
-                )
-            end)
-          else
-            grid
-          end
 
-        [{x - 1, y}, {x + 1, y}, {x, y - 1}, {x, y + 1}]
-        |> Enum.filter(fn c -> grid |> Map.has_key?(c) end)
-        |> Enum.reduce(pq, fn
-          {x, y} = c, pq ->
+                val ->
+                  val
+              end
+
             pq
             |> PriorityQueue.add(
-              weight + grid[c] - (tgtx - x) - (tgty - y),
-              {weight + grid[c], c}
+              weight + val - (tgtx - x) - (tgty - y),
+              {weight + val, c}
             )
         end)
-        |> a_star_this_sucker(grid, seen |> MapSet.put(coord), tgt, expand?, size)
+        |> a_star_this_sucker(grid, seen |> MapSet.put(x * 1000 + y), tgt, size, states + 1)
     end
-  end
-
-  def five_x_this_grid(grid, {sizex, sizey}) do
-    og_grid = grid
-
-    0..4
-    |> Enum.reduce(
-      grid,
-      fn y, grid ->
-        0..4
-        |> Enum.reduce(
-          grid,
-          fn x, grid ->
-            og_grid
-            |> Enum.reduce(grid, fn {{gx, gy}, i}, grid ->
-              grid |> Map.put({gx + sizex * x, gy + sizey * y}, rem(i - 1 + x + y, 9) + 1)
-            end)
-          end
-        )
-      end
-    )
   end
 end
