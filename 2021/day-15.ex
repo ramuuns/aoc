@@ -43,7 +43,7 @@ defmodule Day15 do
   def prepare_row([], grid, _, x), do: {grid, x - 1}
 
   def prepare_row([i | rest], grid, y, x),
-    do: prepare_row(rest, grid |> Map.put({x, y}, String.to_integer(i)), y, x + 1)
+    do: prepare_row(rest, grid |> Map.put(x * 1000 + y, String.to_integer(i)), y, x + 1)
 
   def part1({grid, tgty, tgtx}) do
     a_star_this_sucker(
@@ -79,7 +79,7 @@ defmodule Day15 do
 
     cond do
       MapSet.member?(seen, x * 1000 + y) ->
-        a_star_this_sucker(pq, grid, seen, tgt, size, states + 1)
+        a_star_this_sucker(pq, grid, seen, tgt, size, states)
 
       x == tgtx and y == tgty ->
         "states: #{states}" |> IO.puts()
@@ -97,17 +97,9 @@ defmodule Day15 do
         |> Enum.reduce(pq, fn
           {x, y} = c, pq ->
             val =
-              case grid[c] do
-                nil ->
-                  rem(
-                    grid[{rem(x, orig_sizex), rem(y, orig_sizey)}] + div(x, orig_sizex) +
-                      div(y, orig_sizey) - 1,
-                    9
-                  ) + 1
-
-                val ->
-                  val
-              end
+              (Map.get(grid, rem(x, orig_sizex) * 1000 + rem(y, orig_sizey)) + div(x, orig_sizex) +
+                 div(y, orig_sizey))
+              |> ensure_fits
 
             pq
             |> PriorityQueue.add(
@@ -118,4 +110,7 @@ defmodule Day15 do
         |> a_star_this_sucker(grid, seen |> MapSet.put(x * 1000 + y), tgt, size, states + 1)
     end
   end
+
+  def ensure_fits(n) when n <= 9, do: n
+  def ensure_fits(n), do: ensure_fits(n - 9)
 end
