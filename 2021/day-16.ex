@@ -11,7 +11,7 @@ defmodule Day16 do
   end
 
   def read_input(:test) do
-    "F600BC2D8F"
+    "C200B40A82"
     |> String.split("\n")
     |> prepare_data
   end
@@ -22,27 +22,10 @@ defmodule Day16 do
     |> prepare_data
   end
 
-  def prepare_data([data]) do
-    data
-    |> String.split("", trim: true)
-    |> Enum.flat_map(fn
-      "0" -> [0, 0, 0, 0]
-      "1" -> [0, 0, 0, 1]
-      "2" -> [0, 0, 1, 0]
-      "3" -> [0, 0, 1, 1]
-      "4" -> [0, 1, 0, 0]
-      "5" -> [0, 1, 0, 1]
-      "6" -> [0, 1, 1, 0]
-      "7" -> [0, 1, 1, 1]
-      "8" -> [1, 0, 0, 0]
-      "9" -> [1, 0, 0, 1]
-      "A" -> [1, 0, 1, 0]
-      "B" -> [1, 0, 1, 1]
-      "C" -> [1, 1, 0, 0]
-      "D" -> [1, 1, 0, 1]
-      "E" -> [1, 1, 1, 0]
-      "F" -> [1, 1, 1, 1]
-    end)
+  def prepare_data([input]) do
+    len = byte_size(input)
+    num = input |> String.to_integer(16)
+    <<num::integer-size(len)-unit(4)>>
   end
 
   def part1(data) do
@@ -53,103 +36,46 @@ defmodule Day16 do
     recurse_decode_packets(data, :eval, []) |> Enum.at(0)
   end
 
-  def recurse_decode_packets([v1, v2, v3, 1, 0, 0 | rest], :version_num, acc) do
-    acc = bits_to_num([v1, v2, v3], 0) + acc
+  def recurse_decode_packets(<<version::3, 4::3, rest::bits>>, :version_num, acc) do
     {rest, _} = read_value(rest, 0)
-    recurse_decode_packets(rest, :version_num, acc)
+    recurse_decode_packets(rest, :version_num, acc + version)
   end
 
   def recurse_decode_packets(
-        [v1, v2, v3, _, _, _, 1, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11 | rest],
+        <<version::3, _::3, 1::1, _::11, rest::bits>>,
         :version_num,
         acc
-      ) do
-    acc = bits_to_num([v1, v2, v3], 0) + acc
-    _num_subpackets = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11], 0)
-    recurse_decode_packets(rest, :version_num, acc)
-  end
+      ),
+      do: recurse_decode_packets(rest, :version_num, acc + version)
 
   def recurse_decode_packets(
-        [
-          v1,
-          v2,
-          v3,
-          _,
-          _,
-          _,
-          0,
-          n1,
-          n2,
-          n3,
-          n4,
-          n5,
-          n6,
-          n7,
-          n8,
-          n9,
-          n10,
-          n11,
-          n12,
-          n13,
-          n14,
-          n15 | rest
-        ],
+        <<version::3, _::3, 0::1, _::15, rest::bits>>,
         :version_num,
         acc
-      ) do
-    acc = bits_to_num([v1, v2, v3], 0) + acc
-    _sub_len = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15], 0)
-    recurse_decode_packets(rest, :version_num, acc)
-  end
+      ),
+      do: recurse_decode_packets(rest, :version_num, acc + version)
 
-  def recurse_decode_packets([_, _, _, 1, 0, 0 | rest], :eval, acc) do
+  def recurse_decode_packets(<<_::3, 4::3, rest::bits>>, :eval, acc) do
     {rest, val} = read_value(rest, 0)
     recurse_decode_packets(rest, :eval, [val | acc])
   end
 
   def recurse_decode_packets(
-        [
-          _,
-          _,
-          _,
-          t1,
-          t2,
-          t3,
-          0,
-          n1,
-          n2,
-          n3,
-          n4,
-          n5,
-          n6,
-          n7,
-          n8,
-          n9,
-          n10,
-          n11,
-          n12,
-          n13,
-          n14,
-          n15 | rest
-        ],
+        <<_::3, type::3, 0::1, sub_len::15, rest::bits>>,
         :eval,
         acc
       ) do
-    sub_len = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15], 0)
-    type = bits_to_num([t1, t2, t3], 0)
-    {sub_rest, rest} = rest |> Enum.split(sub_len)
+    <<sub_rest::bits-size(sub_len), rest::bits>> = rest
     values = recurse_decode_packets(sub_rest, :eval, [])
     value = calc_value(values, type)
     recurse_decode_packets(rest, :eval, [value | acc])
   end
 
   def recurse_decode_packets(
-        [_, _, _, t1, t2, t3, 1, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11 | rest],
+        <<_::3, type::3, 1::1, num_subpackets::11, rest::bits>>,
         :eval,
         acc
       ) do
-    num_subpackets = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11], 0)
-    type = bits_to_num([t1, t2, t3], 0)
     {values, rest} = decode_n_subpackets(rest, [], num_subpackets)
     value = calc_value(values, type)
     recurse_decode_packets(rest, :eval, [value | acc])
@@ -159,68 +85,37 @@ defmodule Day16 do
 
   def decode_n_subpackets(rest, acc, 0), do: {acc, rest}
 
-  def decode_n_subpackets([_, _, _, 1, 0, 0 | rest], acc, n) do
+  def decode_n_subpackets(<<_::3, 4::3, rest::bits>>, acc, n) do
     {rest, val} = read_value(rest, 0)
     decode_n_subpackets(rest, [val | acc], n - 1)
   end
 
   def decode_n_subpackets(
-        [
-          _,
-          _,
-          _,
-          t1,
-          t2,
-          t3,
-          0,
-          n1,
-          n2,
-          n3,
-          n4,
-          n5,
-          n6,
-          n7,
-          n8,
-          n9,
-          n10,
-          n11,
-          n12,
-          n13,
-          n14,
-          n15 | rest
-        ],
+        <<_::3, type::3, 0::1, sub_len::15, rest::bits>>,
         acc,
         n
       ) do
-    sub_len = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15], 0)
-    type = bits_to_num([t1, t2, t3], 0)
-    {sub_rest, rest} = rest |> Enum.split(sub_len)
+    <<sub_rest::bits-size(sub_len), rest::bits>> = rest
     values = recurse_decode_packets(sub_rest, :eval, [])
     value = calc_value(values, type)
     decode_n_subpackets(rest, [value | acc], n - 1)
   end
 
   def decode_n_subpackets(
-        [_, _, _, t1, t2, t3, 1, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11 | rest],
+        <<_::3, type::3, 1::1, num_subpackets::11, rest::bits>>,
         acc,
         n
       ) do
-    num_subpackets = bits_to_num([n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11], 0)
-    type = bits_to_num([t1, t2, t3], 0)
     {values, rest} = decode_n_subpackets(rest, [], num_subpackets)
     value = calc_value(values, type)
     decode_n_subpackets(rest, [value | acc], n - 1)
   end
 
-  def bits_to_num([], acc), do: acc
-  def bits_to_num([1 | rest], acc), do: bits_to_num(rest, (acc <<< 1) + 1)
-  def bits_to_num([0 | rest], acc), do: bits_to_num(rest, acc <<< 1)
+  def read_value(<<1::1, n::4, rest::bits>>, val),
+    do: read_value(rest, (val <<< 4) + n)
 
-  def read_value([1, a, b, c, d | rest], val),
-    do: read_value(rest, (val <<< 4) + bits_to_num([a, b, c, d], 0))
-
-  def read_value([0, a, b, c, d | rest], val),
-    do: {rest, (val <<< 4) + bits_to_num([a, b, c, d], 0)}
+  def read_value(<<0::1, n::4, rest::bits>>, val),
+    do: {rest, (val <<< 4) + n}
 
   def calc_value(values, 0), do: Enum.sum(values)
   def calc_value(values, 1), do: Enum.reduce(values, 1, fn n, p -> p * n end)
