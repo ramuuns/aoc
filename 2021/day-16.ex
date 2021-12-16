@@ -1,6 +1,4 @@
 defmodule Day16 do
-  Code.compile_file("priority_queue.ex")
-
   use Bitwise
 
   def run(mode) do
