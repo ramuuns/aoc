@@ -53,7 +53,7 @@ defmodule Day17 do
 
     y_candidates = 0..miny |> Enum.to_list() |> find_ys({miny, maxy}, []) |> Enum.uniq()
 
-    find_all(y_candidates, x_candidates, [])
+    find_all(y_candidates, x_candidates)
     |> Enum.uniq()
     |> Enum.count()
   end
@@ -130,6 +130,58 @@ defmodule Day17 do
     do: {true, x}
 
   def check_if_can_x_in_steps([_ | rest], steps), do: check_if_can_x_in_steps(rest, steps)
+
+  def add_to_map([], ret, _, _), do: ret
+
+  def add_to_map([steps | rest], ret, kind, coord) do
+    coords_this_steps = ret |> Map.get(steps, %{y: [], x: []})
+
+    coords_this_steps =
+      coords_this_steps |> Map.put(kind, [coord | Map.get(coords_this_steps, kind)])
+
+    add_to_map(rest, ret |> Map.put(steps, coords_this_steps), kind, coord)
+  end
+
+  def steps_to_coords([], ret), do: ret
+
+  def steps_to_coords([{y, min_steps, max_steps} | rest], ret),
+    do: steps_to_coords(rest, min_steps..max_steps |> Enum.to_list() |> add_to_map(ret, :y, y))
+
+  def steps_to_coords([{x, min_steps, false, max_steps} | rest], ret),
+    do: steps_to_coords(rest, min_steps..max_steps |> Enum.to_list() |> add_to_map(ret, :x, x))
+
+  def steps_to_coords([{x, min_steps, true, _} | rest], ret),
+    do:
+      steps_to_coords(
+        rest,
+        ret |> Map.keys() |> Enum.filter(fn k -> k >= min_steps end) |> add_to_map(ret, :x, x)
+      )
+
+  def cart_prod([], _, ret), do: ret
+  def cart_prod([a | rest], b, ret), do: cart_prod(rest, b, b |> add_all_to(ret, a))
+
+  def add_all_to([], ret, _), do: ret
+  def add_all_to([b | rest], ret, a), do: add_all_to(rest, [{a, b} | ret], a)
+
+  def get_all_coords([], ret), do: ret
+  def get_all_coords([{_, %{y: []}} | rest], ret), do: get_all_coords(rest, ret)
+  def get_all_coords([{_, %{x: []}} | rest], ret), do: get_all_coords(rest, ret)
+
+  def get_all_coords([{_, %{x: xes, y: ys}} | rest], ret),
+    do: get_all_coords(rest, cart_prod(xes, ys, ret))
+
+  # this here's the _second_ approach, where we build a map of %{ nr_of_steps: %{ x: [list, of, x, with this, step], y: [list, of, y, in, this, step]  }}
+  # and then look at all the steps that have nonempty x and y lists and do a carteasian product of the two lists
+
+  def find_all(ys, xs) do
+    xs
+    |> steps_to_coords(ys |> steps_to_coords(%{}))
+    |> Enum.to_list()
+    |> get_all_coords([])
+  end
+
+  #  ok so the stuff below was the first approach, where we basically do a x*y loop to check 
+  # if given the nr of steps to get to a particular y, we can get an x in those particular steps
 
   def find_all([], _, ret), do: ret
 
