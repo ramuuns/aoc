@@ -1,7 +1,9 @@
 defmodule Runner do
-  def pad_number(num, pad) do
+  def pad_number(num, pad) when is_integer(num) do
     num |> Integer.to_string() |> String.pad_leading(pad)
   end
+
+  def pad_number(num, _), do: num
 
   def run(["all"]) do
     start = :erlang.system_time(:millisecond)
