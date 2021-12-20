@@ -159,110 +159,149 @@ defmodule Day19 do
 
   def prepare_data([], scanners, scanner), do: [scanner | scanners]
   def prepare_data(["" | rest], scanners, scanner), do: prepare_data(rest, scanners, scanner)
-  def prepare_data(["---" <> _ | rest], scanners, scanner), do: prepare_data(rest, [scanner | scanners], [])
-  def prepare_data([ xyz | rest ], scanners, scanner), do: prepare_data(rest, scanners, [ xyz |> String.split(",") |> Enum.map(&String.to_integer/1) | scanner])
+
+  def prepare_data(["---" <> _ | rest], scanners, scanner),
+    do: prepare_data(rest, [scanner | scanners], [])
+
+  def prepare_data([xyz | rest], scanners, scanner),
+    do:
+      prepare_data(rest, scanners, [
+        xyz |> String.split(",") |> Enum.map(&String.to_integer/1) | scanner
+      ])
 
   def part1(data) do
-    coords_by_scanner = data
-      |> Enum.reverse()
-      |> Enum.with_index()
-      |> Enum.map(fn {a,b} -> {b,a} end)
-      |> Enum.into(%{})
-    normalized_scanners = 
+    coords_by_scanner =
       data
       |> Enum.reverse()
       |> Enum.with_index()
-      |> Task.async_stream(fn {scanner, n} -> {n, scanner |> normalize_all } end)
-      |> Enum.map(fn {_, d} -> d end)
-    normalized_scanners 
-    |> find_unique_coords()
-    |> try_convert_to_same_coords({0, %{}}, coords_by_scanner)
-    |> then(fn map -> map[0] end)
- #   |> print_found_coords() 
-    |> MapSet.size()
-  end
-
-  def print_found_coords(map) do
-    map |> Enum.to_list() |> Enum.sort_by(&(Enum.at(&1,0))) |> Enum.map(fn c -> c |> IO.inspect() end)
-    map
-  end
-
-  def part2(data) do
-    coords_by_scanner = data
-      |> Enum.reverse()
-      |> Enum.with_index()
-      |> Enum.map(fn {_,b} -> {b,[[0,0,0]]} end)
+      |> Enum.map(fn {a, b} -> {b, a} end)
       |> Enum.into(%{})
+
     normalized_scanners =
       data
       |> Enum.reverse()
       |> Enum.with_index()
-      |> Task.async_stream(fn {scanner, n} -> {n, scanner |> normalize_all } end)
+      |> Task.async_stream(fn {scanner, n} -> {n, scanner |> normalize_all} end)
       |> Enum.map(fn {_, d} -> d end)
-    scanner_coords = normalized_scanners
+
+    normalized_scanners
     |> find_unique_coords()
     |> try_convert_to_same_coords({0, %{}}, coords_by_scanner)
     |> then(fn map -> map[0] end)
-#    |> print_found_coords()
-    |> Enum.to_list
+    #   |> print_found_coords() 
+    |> MapSet.size()
+  end
+
+  def print_found_coords(map) do
+    map
+    |> Enum.to_list()
+    |> Enum.sort_by(&Enum.at(&1, 0))
+    |> Enum.map(fn c -> c |> IO.inspect() end)
+
+    map
+  end
+
+  def part2(data) do
+    coords_by_scanner =
+      data
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Enum.map(fn {_, b} -> {b, [[0, 0, 0]]} end)
+      |> Enum.into(%{})
+
+    normalized_scanners =
+      data
+      |> Enum.reverse()
+      |> Enum.with_index()
+      |> Task.async_stream(fn {scanner, n} -> {n, scanner |> normalize_all} end)
+      |> Enum.map(fn {_, d} -> d end)
+
+    scanner_coords =
+      normalized_scanners
+      |> find_unique_coords()
+      |> try_convert_to_same_coords({0, %{}}, coords_by_scanner)
+      |> then(fn map -> map[0] end)
+      #    |> print_found_coords()
+      |> Enum.to_list()
+
     scanner_coords |> find_max_distance(scanner_coords, 0)
   end
 
-  def find_max_distance(_,[], max), do: max
-  def find_max_distance([], [_| rest], max), do: find_max_distance(rest, rest, max)
+  def find_max_distance(_, [], max), do: max
+  def find_max_distance([], [_ | rest], max), do: find_max_distance(rest, rest, max)
   def find_max_distance([a | rest], [a | _] = vs, max), do: find_max_distance(rest, vs, max)
-  def find_max_distance([a | rest], [b | _] = vs, max), do: find_max_distance(rest, vs, Enum.max([max, distance(a,b)]))
 
-  def distance(a, b), do: Enum.zip(a,b) |> Enum.map(fn {a,b} -> abs(a - b) end) |> Enum.sum()
+  def find_max_distance([a | rest], [b | _] = vs, max),
+    do: find_max_distance(rest, vs, Enum.max([max, distance(a, b)]))
+
+  def distance(a, b), do: Enum.zip(a, b) |> Enum.map(fn {a, b} -> abs(a - b) end) |> Enum.sum()
 
   def normalize_all(scanner), do: normalize_all(scanner, scanner, %{})
   def normalize_all([], _, norm), do: norm
-  def normalize_all([a | rest], scanners, norm), do: normalize_all(rest, scanners, norm |> Map.put(a, scanners |> normalize_vs(a, [])))
+
+  def normalize_all([a | rest], scanners, norm),
+    do: normalize_all(rest, scanners, norm |> Map.put(a, scanners |> normalize_vs(a, [])))
 
   def normalize_vs([], _, ret), do: ret
-  def normalize_vs([[x,y,z] | rest], [a,b,c], ret), do: normalize_vs(rest, [a,b,c], [ [x-a, y-b, z-c, abs(x-a) + abs(y-b) + abs(z-c) ] | ret])
+
+  def normalize_vs([[x, y, z] | rest], [a, b, c], ret),
+    do:
+      normalize_vs(rest, [a, b, c], [
+        [x - a, y - b, z - c, abs(x - a) + abs(y - b) + abs(z - c)] | ret
+      ])
 
   def find_unique_coords(scanners), do: find_unique_coords(scanners, scanners, %{})
   def find_unique_coords([], _, ret), do: ret
-  def find_unique_coords([s | rest], scanners, ret), do: find_unique_coords(rest, scanners, find_overlaps(scanners, s, ret))
+
+  def find_unique_coords([s | rest], scanners, ret),
+    do: find_unique_coords(rest, scanners, find_overlaps(scanners, s, ret))
 
   def find_overlaps([], _, ret), do: ret
-  def find_overlaps([{s, _} | rest], {s, _} = scanner, ret), do: find_overlaps(rest,scanner, ret)
-  def find_overlaps([{a, _} | rest], {b, _} = scanner, ret) when is_map_key(ret, {a,b}) or is_map_key(ret, {b,a}), do: find_overlaps(rest,scanner, ret)
+  def find_overlaps([{s, _} | rest], {s, _} = scanner, ret), do: find_overlaps(rest, scanner, ret)
+
+  def find_overlaps([{a, _} | rest], {b, _} = scanner, ret)
+      when is_map_key(ret, {a, b}) or is_map_key(ret, {b, a}),
+      do: find_overlaps(rest, scanner, ret)
+
   def find_overlaps([{a, norm_a} | rest], {s, norm_s} = scanner, ret) do
     stuff_for_the_map = norm_a |> Enum.to_list() |> try_find_overlaps(norm_s |> Enum.to_list())
-    find_overlaps(rest, scanner, ret |> Map.put({s,a}, stuff_for_the_map) )
+    find_overlaps(rest, scanner, ret |> Map.put({s, a}, stuff_for_the_map))
   end
 
   def try_find_overlaps([], _), do: {false, nil, nil, nil}
+
   def try_find_overlaps([a | norms], tgt) do
-    case try_find_overlap(tgt,a) do
+    case try_find_overlap(tgt, a) do
       {true, _, _, _} = ret -> ret
-      _ -> try_find_overlaps(norms,tgt)
-    end 
+      _ -> try_find_overlaps(norms, tgt)
+    end
   end
 
   def try_find_overlap([], _), do: {false, nil, nil, nil}
+
   def try_find_overlap([{c, a} | rest], {bc, b}) do
-    {does_match?, matches} = matches_12?(a,b) 
+    {does_match?, matches} = matches_12?(a, b)
+
     if does_match? do
       {true, {c, a}, {bc, b}, matches}
     else
-      try_find_overlap(rest, {bc,b})
+      try_find_overlap(rest, {bc, b})
     end
   end
 
   def matches_12?(a, b) do
-    mag_a = a |> Enum.map(fn [_,_,_,m] -> m end) |> Enum.into(MapSet.new())
-    mag_b = b |> Enum.map(fn [_,_,_,m] -> m end) |> Enum.into(MapSet.new())
+    mag_a = a |> Enum.map(fn [_, _, _, m] -> m end) |> Enum.into(MapSet.new())
+    mag_b = b |> Enum.map(fn [_, _, _, m] -> m end) |> Enum.into(MapSet.new())
     intersection = mag_a |> MapSet.intersection(mag_b)
     int_size = intersection |> MapSet.size()
     ret = int_size >= 12
+
     if ret do
       int_items = {
-        a |> Enum.filter(fn [_,_,_,m] -> intersection |> MapSet.member?(m) end),
-        b |> Enum.filter(fn [_,_,_,m] -> intersection |> MapSet.member?(m) end)
+        a |> Enum.filter(fn [_, _, _, m] -> intersection |> MapSet.member?(m) end),
+        b |> Enum.filter(fn [_, _, _, m] -> intersection |> MapSet.member?(m) end)
       }
+
       {true, int_items}
     else
       {false, nil}
@@ -270,153 +309,130 @@ defmodule Day19 do
   end
 
   def try_convert_to_same_coords(_, {tgt, seen}, _) when is_map_key(seen, tgt), do: seen
+
   def try_convert_to_same_coords(c, {tgt, seen}, coords_by_scanner) do
     seen = seen |> Map.put(tgt, MapSet.new(coords_by_scanner[tgt]))
-    neighbors = c |> Enum.filter(fn
-      {{^tgt, next}, {true, _, _,_}} when not is_map_key(seen, next) -> true
-      {{next, ^tgt}, {true, _, _,_}} when not is_map_key(seen, next) -> true
-      _ -> false
-    end)
-    neighbors |> Enum.reduce(seen, fn
-      {{^tgt, next}, {_, {tgt_c, _}, {next_c, _}, {t1, t2}}}, seen -> 
+
+    neighbors =
+      c
+      |> Enum.filter(fn
+        {{^tgt, next}, {true, _, _, _}} when not is_map_key(seen, next) -> true
+        {{next, ^tgt}, {true, _, _, _}} when not is_map_key(seen, next) -> true
+        _ -> false
+      end)
+
+    neighbors
+    |> Enum.reduce(seen, fn
+      {{^tgt, next}, {_, {tgt_c, _}, {next_c, _}, {t1, t2}}}, seen ->
         {t_src, t_dest} = find_trans({t2, t1})
         seen = try_convert_to_same_coords(c, {next, seen}, coords_by_scanner)
-        seen |> Map.put(tgt, seen[next] |> Enum.reduce(seen[tgt], fn 
-          coord, seen -> 
-            seen |> MapSet.put( coord |> translate(next_c) |> rotate([t_src],[t_dest]) |> translate(tgt_c, :add) )
-        end))
-      {{next, ^tgt},  {_, {next_c, _}, {tgt_c, _}, {t1, t2}}}, seen ->
+
+        seen
+        |> Map.put(
+          tgt,
+          seen[next]
+          |> Enum.reduce(seen[tgt], fn
+            coord, seen ->
+              seen
+              |> MapSet.put(
+                coord
+                |> translate(next_c)
+                |> rotate([t_src], [t_dest])
+                |> translate(tgt_c, :add)
+              )
+          end)
+        )
+
+      {{next, ^tgt}, {_, {next_c, _}, {tgt_c, _}, {t1, t2}}}, seen ->
         {t_src, t_dest} = find_trans({t1, t2})
         seen = try_convert_to_same_coords(c, {next, seen}, coords_by_scanner)
-        seen |> Map.put(tgt, seen[next] |> Enum.reduce(seen[tgt], fn
-          coord, seen ->
-            seen |> MapSet.put( coord |> translate(next_c) |> rotate([t_src],[t_dest]) |> translate(tgt_c, :add) )
-        end))
+
+        seen
+        |> Map.put(
+          tgt,
+          seen[next]
+          |> Enum.reduce(seen[tgt], fn
+            coord, seen ->
+              seen
+              |> MapSet.put(
+                coord
+                |> translate(next_c)
+                |> rotate([t_src], [t_dest])
+                |> translate(tgt_c, :add)
+              )
+          end)
+        )
     end)
   end
 
-  def try_convert_to_same_coords(c) do
-    cmap_as_list = c |> Enum.filter(fn {_, {has?, _, _, _}} -> has? end)
-    first_one = cmap_as_list |> Enum.find(fn 
-      {{0, _}, _} -> true 
-      {{_, 0}, _} -> true
-      _ -> false 
-    end)
-    {c, s1} = case first_one do
-      {{0,_}, {true, a, _, _}} -> a
-      {{_,0}, {true, _, b, _}} -> b
-    end
-    {c, s1} |> IO.inspect()
-    coords = s1 |> add_all_to_coords( MapSet.new(), [0,0,0], c, [[1,2,3]], [[1,2,3]] )
-    cmap_as_list 
-    |> find_neighbors(0, %{0 => 1}, [], c, [[1,2,3]], [[1,2,3]])
-    |> find_the_coords(cmap_as_list, %{0 => 1}, coords)
-  end
-
-  def find_the_coords([], _, _, ret), do: ret
-  def find_the_coords([{scanner, _, _, _, _} | next], all, seen, coords) when is_map_key(seen, scanner), do: find_the_coords(next, all, seen, coords)
-  def find_the_coords([{scanner, center_coord_scanner, t_src, t_dest, {{s1, s2}, {true, o1, o2, _}}} | next], all_overlaps, seen, coords) do
-    {c, clist} = case scanner do
-      ^s1 -> o1
-      ^s2 -> o2
-    end
-    IO.puts("to add #{scanner}")
-    center_coord_scanner |> IO.inspect()
-    #{center_coord_scanner, c, clist, o1, o2} |> IO.inspect()
-    coords = clist |> add_all_to_coords(coords, center_coord_scanner, c, t_src, t_dest)
-    #IO.puts("\nadded #{scanner}")
-    #print_found_coords(coords)
-    seen = seen |> Map.put(scanner, 1)
-    next = all_overlaps |> find_neighbors(scanner, seen, next, center_coord_scanner, t_src, t_dest)
-    find_the_coords(next, all_overlaps, seen, coords)
-  end
-
-  def find_neighbors([], _, _, next, _, _, _), do: next
-  def find_neighbors([ { {a, scanner}, _ } | rest ], scanner, seen, next, c, ts, td) when is_map_key(seen, a), do: find_neighbors(rest, scanner, seen, next, c, ts, td)
-  def find_neighbors([ { {scanner, a}, _ } | rest ], scanner, seen, next, c, ts, td) when is_map_key(seen, a), do: find_neighbors(rest, scanner, seen, next, c, ts, td) 
-  def find_neighbors([ { {a, scanner}, {true, {c1,_ }, {c2, _ }, {t1, t2}} } = next_item | rest ], scanner, seen, next, c, ts, td) do
-    {t_src, t_dest} = find_trans({t2, t1})
-    t_src = [t_src | ts]
-    t_dest = [t_dest | td]
-    {scanner, a, c, c1, c2, c |> translate( c2 |> rotate(ts, td) |> IO.inspect(), :add) } |> IO.inspect(label: "b,a")
-     
-    find_neighbors(rest, scanner, seen, [ {a, c |> translate( c1 |> rotate(ts, td), :add ) , t_src, t_dest, next_item } | next], c, ts, td)
-  end
-  def find_neighbors([ { {scanner, a}, {true, {c1, _}, {c2, _}, {t1, t2}} } = next_item | rest ], scanner, seen, next, c, ts, td) do
-    {t_src, t_dest} = find_trans({t1, t2})
-    t_src = [t_src | ts] 
-    t_dest = [t_dest | td]
-    center2 = translate(c, c1 |> rotate(ts, td)) |> translate(c2 |> rotate(t_src |> Enum.reverse(), t_dest |> Enum.reverse()))
-    center = c |> rotate(t_src, t_dest) |> translate(c2) |> rotate(t_src |> Enum.reverse(), t_dest |> Enum.reverse())
-    {scanner, a, c, c1, c2, center, center2} |> IO.inspect(label: "a,b")
-    find_neighbors(rest, scanner, seen, [ {a, center , t_src, t_dest, next_item } | next], c, ts, td)
-  end
-
-
-  def find_neighbors([ _ | rest], scanner, seen, next, c,ts, td), do: find_neighbors(rest, scanner, seen, next,c, ts,td)
-
-
-  def find_trans({a,b}) do
-    sorted_a = a |> Enum.sort_by(&(Enum.at(&1, 3)), :desc )
-    sorted_b = b |> Enum.sort_by(&(Enum.at(&1, 3)), :desc )
-    {sorted_a , sorted_b} 
+  def find_trans({a, b}) do
+    sorted_a = a |> Enum.sort_by(&Enum.at(&1, 3), :desc)
+    sorted_b = b |> Enum.sort_by(&Enum.at(&1, 3), :desc)
+    {sorted_a, sorted_b}
     gimme_trans(sorted_a, sorted_b)
   end
 
-  def gimme_trans([[a,_,_,m] | ta], [ [d,e,f,m] | tb]) when abs(a) != abs(d) and abs(a) != abs(e) and abs(a) != abs(f), do: gimme_trans(ta,tb)
-  def gimme_trans([[a,b,c,m] | _], [ [d,e,f,m] | _]) when abs(a) != abs(b) and abs(b) != abs(c), do: {[a,b,c], [d,e,f]}
-  def gimme_trans([[_,_,_,m] = a|ta], [_, [_,_,_,m] = b|tb]), do: gimme_trans([a| ta],[b |tb ])
-  def gimme_trans([ _, [_,_,_,m] = a|ta], [ [_,_,_,m] = b|tb]), do: gimme_trans([a| ta],[b |tb ])
-  def gimme_trans([_|ta], [_|tb]), do: gimme_trans(ta,tb)
-  
-  def add_all_to_coords([], ret, _, _, _, _), do: ret
-  def add_all_to_coords([c | next], ret, base, c_base, t_src, t_dest), 
-    do: add_all_to_coords(next, ret |> MapSet.put( coord_to_orig(c, base, c_base, t_src, t_dest) ), base, c_base, t_src, t_dest )
+  def gimme_trans([[a, _, _, m] | ta], [[d, e, f, m] | tb])
+      when abs(a) != abs(d) and abs(a) != abs(e) and abs(a) != abs(f),
+      do: gimme_trans(ta, tb)
 
-  def coord_to_orig([x,y,z, _], [a,b,c], [d,e,f], t_src, t_dest) do    
-    [x,y,z] = [x+d,y+e,z+f] |> rotate(t_src, t_dest)
-    [x+a, y+b, z+c]
-  end
+  def gimme_trans([[a, b, c, m] | _], [[d, e, f, m] | _])
+      when abs(a) != abs(b) and abs(b) != abs(c),
+      do: {[a, b, c], [d, e, f]}
 
-  def rotate(s, t1, t2), do: Enum.zip(t1,t2) |> Enum.reduce(s, fn {t1, t2}, acc -> acc |> rotation(t1,t2) end)
+  def gimme_trans([[_, _, _, m] = a | ta], [_, [_, _, _, m] = b | tb]),
+    do: gimme_trans([a | ta], [b | tb])
 
-  def translate([a,b,c], [d,e,f], :add), do: [a+d, b+e, c+f]
-  def translate([a,b,c], [d,e,f]), do: [a-d, b-e, c-f]
+  def gimme_trans([_, [_, _, _, m] = a | ta], [[_, _, _, m] = b | tb]),
+    do: gimme_trans([a | ta], [b | tb])
 
-  def rotation([x,y,z], [a,b,c], [a,b,c]), do: [x,y,z]
-  def rotation([x,y,z], [a,b,c], [b,aa,c]) when a == -aa, do: [y,-x,z]
-  def rotation([x,y,z], [a,b,c], [aa,bb,c]) when a == -aa and b == -bb,  do: [-x,-y,z]
-  def rotation([x,y,z], [a,b,c], [bb,a,c]) when b == -bb, do: [-y,x,z]
+  def gimme_trans([_ | ta], [_ | tb]), do: gimme_trans(ta, tb)
 
-  def rotation([x,y,z], [a,b,c], [aa,b,cc]) when a == -aa and c == -cc, do: [-x,y,-z]
-  def rotation([x,y,z], [a,b,c], [b,a,cc]) when c == -cc, do: [y,x,-z]
-  def rotation([x,y,z], [a,b,c], [a,bb,cc]) when b == -bb and c == -cc, do: [x,-y,-z]
-  def rotation([x,y,z], [a,b,c], [bb,aa,cc]) when a == -aa and b == -bb and c == -cc, do: [-y,-x,-z]
+  def rotate(s, t1, t2),
+    do: Enum.zip(t1, t2) |> Enum.reduce(s, fn {t1, t2}, acc -> acc |> rotation(t1, t2) end)
 
-  def rotation([x,y,z], [a,b,c], [c, b,aa]) when aa == -a, do: [z,y,-x]
-  def rotation([x,y,z], [a,b,c], [aa, b,cc]) when aa == -a and cc == -c, do: [-x,y,-z]
-  def rotation([x,y,z], [a,b,c], [cc,b,a]) when cc == -c, do: [-z,y,x]
+  def translate([a, b, c], [d, e, f], :add), do: [a + d, b + e, c + f]
+  def translate([a, b, c], [d, e, f]), do: [a - d, b - e, c - f]
 
-  def rotation([x,y,z], [a,b,c], [cc, bb,aa]) when cc == -c and bb == -b and aa == -a, do: [-z, -y, -x]
-  def rotation([x,y,z], [a,b,c], [aa, bb, c]) when aa == -a and bb == -b, do: [-x,-y,z]
-  def rotation([x,y,z], [a,b,c], [c, bb, a]) when bb == -b, do: [z, -y, x]
+  def rotation([x, y, z], [a, b, c], [a, b, c]), do: [x, y, z]
+  def rotation([x, y, z], [a, b, c], [b, aa, c]) when a == -aa, do: [y, -x, z]
+  def rotation([x, y, z], [a, b, c], [aa, bb, c]) when a == -aa and b == -bb, do: [-x, -y, z]
+  def rotation([x, y, z], [a, b, c], [bb, a, c]) when b == -bb, do: [-y, x, z]
 
-  def rotation([x,y,z], [a,b,c], [a, cc, b]) when cc == -c, do: [x,-z,y]
-  def rotation([x,y,z], [a,b,c], [a, bb,cc]) when bb == -b and cc == -c, do: [x,-y,-z]
-  def rotation([x,y,z], [a,b,c], [a, c, bb]) when bb == -b, do: [x,z,-y]
+  def rotation([x, y, z], [a, b, c], [aa, b, cc]) when a == -aa and c == -cc, do: [-x, y, -z]
+  def rotation([x, y, z], [a, b, c], [b, a, cc]) when c == -cc, do: [y, x, -z]
+  def rotation([x, y, z], [a, b, c], [a, bb, cc]) when b == -bb and c == -cc, do: [x, -y, -z]
 
-  def rotation([x,y,z], [a,b,c], [aa, c,b]) when aa == -a, do: [-x,z,y]
-  def rotation([x,y,z], [a,b,c], [aa, bb,c]) when aa == -a and bb == -b, do: [-x,-y,z]
-  def rotation([x,y,z], [a,b,c], [aa, cc,bb]) when aa == -a and bb == -b and cc == -c, do: [-x,-z,-y]
+  def rotation([x, y, z], [a, b, c], [bb, aa, cc]) when a == -aa and b == -bb and c == -cc,
+    do: [-y, -x, -z]
 
-  def rotation([x,y,z], [a,b,c], [cc, a, bb]) when cc == -c and bb == -b, do: [-z,x,-y]
-  def rotation([x,y,z], [a,b,c], [b, cc, aa]) when cc == -c and aa == -a, do: [y,-z,-x]
-  def rotation([x,y,z], [a,b,c], [bb, c, aa]) when bb == -b and aa == -a, do: [-y,z, -x]
-  def rotation([x,y,z], [a,b,c], [c, aa, bb]) when bb == -b and aa == -a, do: [z, -x, -y]
-  def rotation([x,y,z], [a,b,c], [b, c, a]), do: [y, z, x]
-  def rotation([x,y,z], [a,b,c], [c, a, b]), do: [z, x, y]
-  def rotation([x,y,z], [a,b,c], [bb, cc, a]) when cc == -c and bb == -b , do: [-y, -z, x]
+  def rotation([x, y, z], [a, b, c], [c, b, aa]) when aa == -a, do: [z, y, -x]
+  def rotation([x, y, z], [a, b, c], [aa, b, cc]) when aa == -a and cc == -c, do: [-x, y, -z]
+  def rotation([x, y, z], [a, b, c], [cc, b, a]) when cc == -c, do: [-z, y, x]
 
-  def rotation([x,y,z], [a,b,c], [cc, aa, b]) when cc == -c and aa == -a , do: [-z, -x, y]
+  def rotation([x, y, z], [a, b, c], [cc, bb, aa]) when cc == -c and bb == -b and aa == -a,
+    do: [-z, -y, -x]
 
+  def rotation([x, y, z], [a, b, c], [aa, bb, c]) when aa == -a and bb == -b, do: [-x, -y, z]
+  def rotation([x, y, z], [a, b, c], [c, bb, a]) when bb == -b, do: [z, -y, x]
+
+  def rotation([x, y, z], [a, b, c], [a, cc, b]) when cc == -c, do: [x, -z, y]
+  def rotation([x, y, z], [a, b, c], [a, bb, cc]) when bb == -b and cc == -c, do: [x, -y, -z]
+  def rotation([x, y, z], [a, b, c], [a, c, bb]) when bb == -b, do: [x, z, -y]
+
+  def rotation([x, y, z], [a, b, c], [aa, c, b]) when aa == -a, do: [-x, z, y]
+  def rotation([x, y, z], [a, b, c], [aa, bb, c]) when aa == -a and bb == -b, do: [-x, -y, z]
+
+  def rotation([x, y, z], [a, b, c], [aa, cc, bb]) when aa == -a and bb == -b and cc == -c,
+    do: [-x, -z, -y]
+
+  def rotation([x, y, z], [a, b, c], [cc, a, bb]) when cc == -c and bb == -b, do: [-z, x, -y]
+  def rotation([x, y, z], [a, b, c], [b, cc, aa]) when cc == -c and aa == -a, do: [y, -z, -x]
+  def rotation([x, y, z], [a, b, c], [bb, c, aa]) when bb == -b and aa == -a, do: [-y, z, -x]
+  def rotation([x, y, z], [a, b, c], [c, aa, bb]) when bb == -b and aa == -a, do: [z, -x, -y]
+  def rotation([x, y, z], [a, b, c], [b, c, a]), do: [y, z, x]
+  def rotation([x, y, z], [a, b, c], [c, a, b]), do: [z, x, y]
+  def rotation([x, y, z], [a, b, c], [bb, cc, a]) when cc == -c and bb == -b, do: [-y, -z, x]
+
+  def rotation([x, y, z], [a, b, c], [cc, aa, b]) when cc == -c and aa == -a, do: [-z, -x, y]
 end
