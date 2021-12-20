@@ -169,6 +169,14 @@ defmodule Day19 do
         xyz |> String.split(",") |> Enum.map(&String.to_integer/1) | scanner
       ])
 
+  def measure(data, fun, label) do
+    start = :erlang.system_time(:microsecond)
+    ret = fun.(data)
+    finish = :erlang.system_time(:microsecond)
+    IO.puts("[#{label}] #{finish - start}us")
+    ret
+  end
+
   def part1(data) do
     coords_by_scanner =
       data
@@ -236,11 +244,11 @@ defmodule Day19 do
 
   def distance(a, b), do: Enum.zip(a, b) |> Enum.map(fn {a, b} -> abs(a - b) end) |> Enum.sum()
 
-  def normalize_all(scanner), do: normalize_all(scanner, scanner, %{})
+  def normalize_all(scanner), do: normalize_all(scanner, scanner, [])
   def normalize_all([], _, norm), do: norm
 
   def normalize_all([a | rest], scanners, norm),
-    do: normalize_all(rest, scanners, norm |> Map.put(a, scanners |> normalize_vs(a, [])))
+    do: normalize_all(rest, scanners, [{a, scanners |> normalize_vs(a, [])} | norm])
 
   def normalize_vs([], _, ret), do: ret
 
@@ -250,11 +258,17 @@ defmodule Day19 do
         [x - a, y - b, z - c, abs(x - a) + abs(y - b) + abs(z - c)] | ret
       ])
 
-  def find_unique_coords(scanners), do: find_unique_coords(scanners, scanners, %{})
-  def find_unique_coords([], _, ret), do: ret
+  def make_scans([_], ret), do: ret
+  def make_scans([head | tail], acc), do: make_scans(tail, [{head, tail} | acc])
 
-  def find_unique_coords([s | rest], scanners, ret),
-    do: find_unique_coords(rest, scanners, find_overlaps(scanners, s, ret))
+  def find_unique_coords(scanners) do
+    scanners
+    |> make_scans([])
+    |> Task.async_stream(fn
+      {scanner, scanners} -> find_overlaps(scanners, scanner, %{})
+    end)
+    |> Enum.reduce(%{}, fn {_, ret}, acc -> acc |> Map.merge(ret) end)
+  end
 
   def find_overlaps([], _, ret), do: ret
   def find_overlaps([{s, _} | rest], {s, _} = scanner, ret), do: find_overlaps(rest, scanner, ret)
@@ -264,7 +278,7 @@ defmodule Day19 do
       do: find_overlaps(rest, scanner, ret)
 
   def find_overlaps([{a, norm_a} | rest], {s, norm_s} = scanner, ret) do
-    stuff_for_the_map = norm_a |> Enum.to_list() |> try_find_overlaps(norm_s |> Enum.to_list())
+    stuff_for_the_map = norm_a |> try_find_overlaps(norm_s)
     find_overlaps(rest, scanner, ret |> Map.put({s, a}, stuff_for_the_map))
   end
 
@@ -283,7 +297,7 @@ defmodule Day19 do
     {does_match?, matches} = matches_12?(a, b)
 
     if does_match? do
-      {true, {c, a}, {bc, b}, matches}
+      {true, c, bc, matches}
     else
       try_find_overlap(rest, {bc, b})
     end
@@ -323,7 +337,7 @@ defmodule Day19 do
 
     neighbors
     |> Enum.reduce(seen, fn
-      {{^tgt, next}, {_, {tgt_c, _}, {next_c, _}, {t1, t2}}}, seen ->
+      {{^tgt, next}, {_, tgt_c, next_c, {t1, t2}}}, seen ->
         {t_src, t_dest} = find_trans({t2, t1})
         seen = try_convert_to_same_coords(c, {next, seen}, coords_by_scanner)
 
@@ -343,7 +357,7 @@ defmodule Day19 do
           end)
         )
 
-      {{next, ^tgt}, {_, {next_c, _}, {tgt_c, _}, {t1, t2}}}, seen ->
+      {{next, ^tgt}, {_, next_c, tgt_c, {t1, t2}}}, seen ->
         {t_src, t_dest} = find_trans({t1, t2})
         seen = try_convert_to_same_coords(c, {next, seen}, coords_by_scanner)
 
