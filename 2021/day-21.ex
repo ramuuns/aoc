@@ -46,22 +46,11 @@ Player 2 starting position: 8"
     end
   end
 
-  def part2(players) do
-    players
-    # |> Enum.map(fn 
-    #  {1, _, _} -> {1, 0, 0}
-    #  {2, _, _} -> {2, 1, 0}
-    # end)
-    |> Enum.map(fn {i, p, _} -> {p, 0, 0, 1} end)
-    |> play_dirac_game(1)
+  def part2([{_, p1, _}, {_, p2, _}]) do
+    [{:p1, p1, 0, 1, p2, 0, 1}]
+    |> play_dirac_game(0, 0)
     |> then(fn {a, b} -> Enum.max([a, b]) end)
   end
-
-  @dice_rolls2 [
-    {2, 1},
-    {3, 2},
-    {4, 1}
-  ]
 
   @dice_rolls3 [
     {3, 1},
@@ -76,104 +65,46 @@ Player 2 starting position: 8"
   @cutoff 21
   @board_size 10
 
-  def universe_count(state),
-    do: state |> Enum.reduce(0, fn {_, m}, acc -> (m |> Map.values() |> Enum.sum()) + acc end)
+  def play_dirac_game([], p1_wins, p2_wins), do: {p1_wins, p2_wins}
 
-  def play_dirac_game([{_, _, wins, _}, {_, p1_score, p1_wins, count}] = state, l)
+  def play_dirac_game([{:p1, _, _, _, _, p2_score, p2_cnt} | states], p1_wins, p2_wins)
+      when p2_score >= @cutoff,
+      do: play_dirac_game(states, p1_wins, p2_wins + p2_cnt)
+
+  def play_dirac_game([{:p2, _, p1_score, p1_cnt, _, _, _} | states], p1_wins, p2_wins)
       when p1_score >= @cutoff,
-      do: {wins, p1_wins + count}
+      do: play_dirac_game(states, p1_wins + p1_cnt, p2_wins)
 
-  def play_dirac_game(
-        [{p1_pos, p1_score, p1_wins, count}, {p2_pos, p2_score, p2_wins, p2_cnt}],
-        l
-      ) do
+  def play_dirac_game([state | states], p1_wins, p2_wins) do
     @dice_rolls3
-    |> Enum.map(fn {dice, cnt1} ->
-      play_dirac_game(
-        [
-          {
-            p2_pos,
-            p2_score,
-            p2_wins,
-            p2_cnt * cnt1
-          },
-          {
-            rem(p1_pos + dice, @board_size),
-            p1_score + rem(p1_pos + dice, @board_size) + 1,
-            p1_wins,
-            count * cnt1
-          }
-        ],
-        l + 1
-      )
-    end)
-    |> Enum.reduce({0, 0}, fn {p2s, p1s}, {p1, p2} -> {p1 + p1s, p2 + p2s} end)
+    |> add_to_states(state, states)
+    |> play_dirac_game(p1_wins, p2_wins)
   end
 
-  ####  NOT THE ACTUAL APPROACH but something I spent lots of time on and want to be commited so that I can think about it maybe
-  def play_dirac_game([{i, score, wins}, p2] = state, universes, total_universes) do
-    {state, score |> universe_count(), universes, total_universes} |> IO.inspect(label: "dirac")
+  def add_to_states([], _, states), do: states
 
-    newscore =
-      score
-      |> Enum.to_list()
-      |> calc_newscore(%{}, div(total_universes, score |> universe_count()))
-      |> IO.inspect()
+  def add_to_states(
+        [{dice, count} | rest],
+        {:p1, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} = st,
+        states
+      ),
+      do:
+        add_to_states(rest, st, [
+          {:p2, rem(p1_pos + dice, @board_size), p1_score + rem(p1_pos + dice, @board_size) + 1,
+           count * p1_cnt, p2_pos, p2_score, count * p2_cnt}
+          | states
+        ])
 
-    winning_scores = newscore |> Map.keys() |> Enum.filter(fn s -> s >= @cutoff end)
+  def add_to_states(
+        [{dice, count} | rest],
+        {:p2, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} = st,
+        states
+      ),
+      do:
+        add_to_states(rest, st, [
+          {:p1, p1_pos, p1_score, count * p1_cnt, rem(p2_pos + dice, @board_size),
+           p2_score + rem(p2_pos + dice, @board_size) + 1, count * p2_cnt}
+          | states
+        ])
 
-    {wins_this_turn, newscore} =
-      winning_scores
-      |> Enum.reduce({0, newscore}, fn
-        ws, {wins, newscore} ->
-          {wins + (newscore[ws] |> Map.values() |> Enum.sum()), newscore |> Map.delete(ws)}
-      end)
-
-    if Enum.empty?(newscore) do
-      wins
-    else
-      universes = newscore |> universe_count()
-      play_dirac_game([p2, {i, newscore, wins + wins_this_turn}], universes, total_universes * 4)
-    end
-  end
-
-  def calc_newscore([], ret, _), do: ret
-
-  def calc_newscore([{s, positions} | rest], ret, universes),
-    do:
-      calc_newscore(rest, add_to_score(s, positions |> Enum.to_list(), ret, universes), universes)
-
-  def add_to_score(_, [], ret, _), do: ret
-
-  def add_to_score(s, [{pos, n} | rest], ret, universes) do
-    ret =
-      apply_roll(%{}, {pos, n}, @dice_rolls2, universes)
-      |> IO.inspect(label: "roll #{s}")
-      |> Enum.to_list()
-      |> Enum.map(fn {pos, n} -> {s + pos + 1, pos, n} end)
-      |> Enum.reduce(ret, fn
-        {news, pos, n}, ret ->
-          posmap = ret[news] || %{}
-          ret |> Map.put(news, Map.put(posmap, pos, (posmap[pos] || 0) + n))
-      end)
-
-    add_to_score(s, rest, ret, universes)
-  end
-
-  def apply_roll(ret, _, [], _), do: ret
-
-  def apply_roll(ret, {pos, n}, [{move, universes} | rest], u),
-    do:
-      apply_roll(
-        ret
-        |> Map.put(
-          rem(pos + move, @board_size),
-          n * universes * u
-        ),
-        {pos, n},
-        rest,
-        u
-      )
-
-  ### END OF THE not the approach approach
 end
