@@ -47,8 +47,9 @@ Player 2 starting position: 8"
   end
 
   def part2([{_, p1, _}, {_, p2, _}]) do
-    [{:p1, p1, 0, 1, p2, 0, 1}]
-    |> play_dirac_game(0, 0)
+    {[{:p1, p1, 0, 1, p2, 0, 1}], 0, 0}
+    #    { [{:p1, 0, 0, 1, 1, 0, 1}], 0, 0 }
+    |> play_dirac_game()
     |> then(fn {a, b} -> Enum.max([a, b]) end)
   end
 
@@ -65,46 +66,92 @@ Player 2 starting position: 8"
   @cutoff 21
   @board_size 10
 
-  def play_dirac_game([], p1_wins, p2_wins), do: {p1_wins, p2_wins}
+  def play_dirac_game({[], p1_wins, p2_wins}), do: {p1_wins, p2_wins}
 
-  def play_dirac_game([{:p1, _, _, _, _, p2_score, p2_cnt} | states], p1_wins, p2_wins)
-      when p2_score >= @cutoff,
-      do: play_dirac_game(states, p1_wins, p2_wins + p2_cnt)
-
-  def play_dirac_game([{:p2, _, p1_score, p1_cnt, _, _, _} | states], p1_wins, p2_wins)
-      when p1_score >= @cutoff,
-      do: play_dirac_game(states, p1_wins + p1_cnt, p2_wins)
-
-  def play_dirac_game([state | states], p1_wins, p2_wins) do
+  def play_dirac_game({states, p1_wins, p2_wins}) do
     @dice_rolls3
-    |> add_to_states(state, states)
-    |> play_dirac_game(p1_wins, p2_wins)
+    |> add_to_states(@dice_rolls3, states, [], p1_wins, p2_wins)
+    |> play_dirac_game()
   end
 
-  def add_to_states([], _, states), do: states
+  def group_states(states) do
+    states
+    |> Enum.frequencies()
+    |> Enum.reduce([], fn
+      {{next, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt}, cnt}, acc ->
+        [{next, p1_pos, p1_score, p1_cnt * cnt, p2_pos, p2_score, p2_cnt * cnt} | acc]
+    end)
+  end
+
+  def add_to_states(_, _, [], states, p1_wins, p2_wins),
+    do: {states |> group_states, p1_wins, p2_wins}
+
+  def add_to_states([], rest, [_ | states], newstates, p1_wins, p2_wins),
+    do: add_to_states(rest, rest, states, newstates, p1_wins, p2_wins)
 
   def add_to_states(
-        [{dice, count} | rest],
-        {:p1, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} = st,
-        states
-      ),
-      do:
-        add_to_states(rest, st, [
-          {:p2, rem(p1_pos + dice, @board_size), p1_score + rem(p1_pos + dice, @board_size) + 1,
-           count * p1_cnt, p2_pos, p2_score, count * p2_cnt}
-          | states
-        ])
+        [{dice, cnt} | rest],
+        odice,
+        [{:p1, p1_pos, p1_score, p1_cnt, _, _, _} | _] = states,
+        newstates,
+        p1_wins,
+        p2_wins
+      )
+      when p1_score + rem(p1_pos + dice, @board_size) + 1 >= @cutoff,
+      do: add_to_states(rest, odice, states, newstates, p1_wins + cnt * p1_cnt, p2_wins)
 
   def add_to_states(
-        [{dice, count} | rest],
-        {:p2, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} = st,
-        states
+        [{dice, cnt} | rest],
+        odice,
+        [{:p2, _, _, _, p2_pos, p2_score, p2_cnt} | _] = states,
+        newstates,
+        p1_wins,
+        p2_wins
+      )
+      when p2_score + rem(p2_pos + dice, @board_size) + 1 >= @cutoff,
+      do: add_to_states(rest, odice, states, newstates, p1_wins, cnt * p2_cnt + p2_wins)
+
+  def add_to_states(
+        [{dice, cnt} | rest],
+        odice,
+        [{:p1, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} | _] = states,
+        newstates,
+        p1_wins,
+        p2_wins
       ),
       do:
-        add_to_states(rest, st, [
-          {:p1, p1_pos, p1_score, count * p1_cnt, rem(p2_pos + dice, @board_size),
-           p2_score + rem(p2_pos + dice, @board_size) + 1, count * p2_cnt}
-          | states
-        ])
+        add_to_states(
+          rest,
+          odice,
+          states,
+          [
+            {:p2, rem(p1_pos + dice, @board_size), p1_score + rem(p1_pos + dice, @board_size) + 1,
+             cnt * p1_cnt, p2_pos, p2_score, cnt * p2_cnt}
+            | newstates
+          ],
+          p1_wins,
+          p2_wins
+        )
 
+  def add_to_states(
+        [{dice, cnt} | rest],
+        odice,
+        [{:p2, p1_pos, p1_score, p1_cnt, p2_pos, p2_score, p2_cnt} | _] = states,
+        newstates,
+        p1_wins,
+        p2_wins
+      ),
+      do:
+        add_to_states(
+          rest,
+          odice,
+          states,
+          [
+            {:p1, p1_pos, p1_score, cnt * p1_cnt, rem(p2_pos + dice, @board_size),
+             p2_score + rem(p2_pos + dice, @board_size) + 1, cnt * p2_cnt}
+            | newstates
+          ],
+          p1_wins,
+          p2_wins
+        )
 end
