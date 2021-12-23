@@ -133,7 +133,7 @@ defmodule Day23 do
     me = grid[p]
 
     cond do
-      in_hallway?(p, grid) ->
+      in_hallway?(p, grid) or can_move_to_dest_room?(p, grid) ->
         dx = dest_x(me)
 
         dy =
@@ -250,7 +250,7 @@ defmodule Day23 do
       is_surrounded?(pos, grid) -> false
       in_dest_room?(pos, grid) and only_my_kind_here?(pos, grid) -> false
       in_hallway?(pos, grid) -> can_move_to_dest_room?(pos, grid)
-      true -> can_move_to_hallway?(pos, grid) or can_move_to_dest_room?(pos, grid)
+      true -> can_move_to_hallway?(pos, grid)
     end
   end
 
