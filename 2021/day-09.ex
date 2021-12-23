@@ -101,4 +101,3 @@ defmodule Day9 do
         size + 1
       )
 end
-

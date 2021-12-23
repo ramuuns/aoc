@@ -46,4 +46,3 @@ defmodule Day1 do
 
   def fancy_part2([h | tail], {_, p2, p3, cnt}), do: fancy_part2(tail, {p2, p3, h, cnt})
 end
-

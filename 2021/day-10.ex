@@ -2,7 +2,7 @@ defmodule Day10 do
   def run(mode) do
     data = read_input(mode)
 
-    { 
+    {
       data |> part1(),
       data |> part2()
     }
@@ -76,4 +76,3 @@ defmodule Day10 do
   def score_stack(["{" | rest], score), do: score_stack(rest, score * 5 + 3)
   def score_stack(["<" | rest], score), do: score_stack(rest, score * 5 + 4)
 end
-

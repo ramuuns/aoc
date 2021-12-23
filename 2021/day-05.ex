@@ -2,7 +2,7 @@ defmodule Day5 do
   def run(mode) do
     data = read_input(mode)
 
-    { 
+    {
       data |> part1(),
       data |> part2()
     }
@@ -90,4 +90,3 @@ defmodule Day5 do
   def add_line(points, [x | xrest], [y | yrest], :diag),
     do: add_line([x * 1000 + y | points], xrest, yrest, :diag)
 end
-

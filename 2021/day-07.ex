@@ -2,7 +2,7 @@ defmodule Day7 do
   def run(mode) do
     data = read_input(mode)
 
-    { 
+    {
       data |> part1(),
       data |> part2()
     }
@@ -94,4 +94,3 @@ defmodule Day7 do
 
   def burn(n), do: div(n * (n - 1), 2)
 end
-

@@ -4,7 +4,7 @@ defmodule Day3 do
   def run(mode) do
     data = read_input(mode)
 
-    { 
+    {
       data |> part1(),
       data |> part2()
     }
@@ -105,4 +105,3 @@ defmodule Day3 do
   def ozcount([["1" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones + 1, zeroes})
   def ozcount([["0" | _] | rest], {ones, zeroes}), do: ozcount(rest, {ones, zeroes + 1})
 end
-

@@ -65,4 +65,3 @@ defmodule Day6 do
   def do_one_day([h | t], zero, 6, next_day), do: do_one_day(t, zero, 7, [h + zero | next_day])
   def do_one_day([h | t], zero, n, next_day), do: do_one_day(t, zero, n + 1, [h | next_day])
 end
-

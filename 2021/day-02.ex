@@ -2,7 +2,7 @@ defmodule Day2 do
   def run(mode) do
     data = read_input(mode)
 
-    { 
+    {
       data |> part1(),
       data |> part2()
     }
@@ -55,4 +55,3 @@ forward 2"
   def part2([{:forward, delta} | tail], {x, y, aim}),
     do: part2(tail, {x + delta, y + aim * delta, aim})
 end
-

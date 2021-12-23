@@ -2,10 +2,18 @@ defmodule Day22 do
   def run(mode) do
     data = read_input(mode)
 
-    {
-      data |> part1(),
-      data |> part2()
-    }
+    [{1, data}, {2, data}]
+    |> Task.async_stream(
+      fn
+        {1, data} -> {1, data |> part1}
+        {2, data} -> {2, data |> part2}
+      end,
+      timeout: :infinity
+    )
+    |> Enum.reduce({0, 0}, fn
+      {_, {1, res}}, {_, p2} -> {res, p2}
+      {_, {2, res}}, {p1, _} -> {p1, res}
+    end)
   end
 
   def read_input(:test) do
@@ -157,10 +165,10 @@ on x=967..23432,y=45373..81175,z=27513..53682"
         {{x + 1, xmax}, y, z} | splits
       ])
 
-  def split_by([{{xmin, xmax}, y, z} | rest], :x, x, splits) when xmin < x,
+  def split_by([{{xmin, _xmax}, y, z} | rest], :x, x, splits) when xmin < x,
     do: split_by(rest, :x, x, [{{xmin, x - 1}, y, z}, {{x, x}, y, z} | splits])
 
-  def split_by([{{xmin, xmax}, y, z} | rest], :x, x, splits) when xmax > x,
+  def split_by([{{_xmin, xmax}, y, z} | rest], :x, x, splits) when xmax > x,
     do: split_by(rest, :x, x, [{{x, x}, y, z}, {{x + 1, xmax}, y, z} | splits])
 
   def split_by([{_, {ymin, ymax}, _} = cube | rest], :y, y, splits) when y > ymax or y < ymin,
@@ -174,10 +182,10 @@ on x=967..23432,y=45373..81175,z=27513..53682"
         {x, {y + 1, ymax}, z} | splits
       ])
 
-  def split_by([{x, {ymin, ymax}, z} | rest], :y, y, splits) when ymin < y,
+  def split_by([{x, {ymin, _ymax}, z} | rest], :y, y, splits) when ymin < y,
     do: split_by(rest, :y, y, [{x, {ymin, y - 1}, z}, {x, {y, y}, z} | splits])
 
-  def split_by([{x, {ymin, ymax}, z} | rest], :y, y, splits) when ymax > y,
+  def split_by([{x, {_ymin, ymax}, z} | rest], :y, y, splits) when ymax > y,
     do: split_by(rest, :y, y, [{x, {y, y}, z}, {x, {y + 1, ymax}, z} | splits])
 
   def split_by([{_, _, {zmin, zmax}} = cube | rest], :z, z, splits) when z > zmax or z < zmin,
@@ -191,10 +199,10 @@ on x=967..23432,y=45373..81175,z=27513..53682"
         {x, y, {z + 1, zmax}} | splits
       ])
 
-  def split_by([{x, y, {zmin, zmax}} | rest], :z, z, splits) when zmin < z,
+  def split_by([{x, y, {zmin, _zmax}} | rest], :z, z, splits) when zmin < z,
     do: split_by(rest, :z, z, [{x, y, {zmin, z - 1}}, {x, y, {z, z}} | splits])
 
-  def split_by([{x, y, {zmin, zmax}} | rest], :z, z, splits) when zmax > z,
+  def split_by([{x, y, {_zmin, zmax}} | rest], :z, z, splits) when zmax > z,
     do: split_by(rest, :z, z, [{x, y, {z, z}}, {x, y, {z + 1, zmax}} | splits])
 
   def split_by([cube | rest], cnd, v, splits), do: split_by(rest, cnd, v, [cube | splits])

@@ -4,10 +4,18 @@ defmodule Day23 do
   def run(mode) do
     data = read_input(mode)
 
-    {
-      data |> part1(),
-      data |> part2()
-    }
+    [{1, data}, {2, data}]
+    |> Task.async_stream(
+      fn
+        {1, data} -> {1, data |> part1}
+        {2, data} -> {2, data |> part2}
+      end,
+      timeout: :infinity
+    )
+    |> Enum.reduce({0, 0}, fn
+      {_, {1, res}}, {_, p2} -> {res, p2}
+      {_, {2, res}}, {p1, _} -> {p1, res}
+    end)
   end
 
   def read_input(:test) do
@@ -143,7 +151,7 @@ defmodule Day23 do
         move_cost = count_moves(p, {dx, dy}) * energy(me)
 
         case seen |> Map.get(newgrid) do
-          c when is_integer(c) and c < cost + move_cost ->
+          c when is_integer(c) and c <= cost + move_cost ->
             {pq, seen}
 
           _ ->

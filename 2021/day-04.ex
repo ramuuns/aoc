@@ -140,4 +140,3 @@ defmodule Day4 do
   def check_for_bingo([board | rest_of_boards], {boards, had_bingo, num, winning_board}),
     do: check_for_bingo(rest_of_boards, {[board | boards], had_bingo, num, winning_board})
 end
-

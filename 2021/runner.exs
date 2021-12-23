@@ -18,33 +18,42 @@ defmodule Runner do
       |> Enum.map(fn "day-" <> file = module ->
         {file |> String.split(".") |> hd() |> String.to_integer(), module}
       end)
-      |> Task.async_stream(fn {day, module} ->
-        Code.compile_file(module)
+      |> Task.async_stream(
+        fn {day, module} ->
+          Code.compile_file(module)
 
-        [:test, :actual]
-        |> Task.async_stream(fn mode ->
-          {mode, apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])}
-        end)
-        |> Enum.map(fn {:ok, res} -> res end)
-        |> then(fn results -> {day, results} end)
-      end)
+          [:test, :actual]
+          |> Task.async_stream(
+            fn mode ->
+              st = :erlang.system_time(:millisecond)
+              res = apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])
+              t = :erlang.system_time(:millisecond) - st
+              {mode, res, t}
+            end,
+            timeout: :infinity
+          )
+          |> Enum.map(fn {:ok, res} -> res end)
+          |> then(fn results -> {day, results} end)
+        end,
+        timeout: :infinity
+      )
       |> Enum.map(fn {:ok, res} -> res end)
       |> Enum.sort_by(fn {day, _} -> day end)
       |> then(fn data ->
         IO.puts(
-          "| Day | #{"test" |> String.pad_trailing(14 * 2 + 3)} | #{"actual" |> String.pad_trailing(14 * 2 + 3)} |"
+          "| Day | #{"test" |> String.pad_trailing(16 * 2 + 3 + 3 + 5)} | #{"actual" |> String.pad_trailing(16 * 2 + 3 + 3 + 5)} |"
         )
 
         IO.puts(
-          "|     | #{"part 1" |> String.pad_trailing(14)} | #{"part 2" |> String.pad_trailing(14)} | #{"part 1" |> String.pad_trailing(14)} | #{"part 2" |> String.pad_trailing(14)} |"
+          "|     | #{"part 1" |> String.pad_trailing(16)} | #{"part 2" |> String.pad_trailing(16)} | Time  | #{"part 1" |> String.pad_trailing(16)} | #{"part 2" |> String.pad_trailing(16)} | Time  |"
         )
 
         data
       end)
       |> Enum.reduce(0, fn
-        {day, [{:test, {testp1, testp2}}, {:actual, {actualp1, actualp2}}]}, days ->
+        {day, [{:test, {testp1, testp2}, tt}, {:actual, {actualp1, actualp2}, ta}]}, days ->
           IO.puts(
-            "| #{day |> pad_number(3)} | #{testp1 |> pad_number(14)} | #{testp2 |> pad_number(14)} | #{actualp1 |> pad_number(14)} | #{actualp2 |> pad_number(14)} |"
+            "| #{day |> pad_number(3)} | #{testp1 |> pad_number(16)} | #{testp2 |> pad_number(16)} | #{tt |> pad_number(5)} | #{actualp1 |> pad_number(16)} | #{actualp2 |> pad_number(16)} | #{ta |> pad_number(5)} |"
           )
 
           days + 1
@@ -77,9 +86,12 @@ defmodule Runner do
       res =
         [:test, :actual]
         |> Enum.filter(fn mode -> runmode == nil || runmode == mode end)
-        |> Task.async_stream(fn mode ->
-          {mode, apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])}
-        end, timeout: :infinity)
+        |> Task.async_stream(
+          fn mode ->
+            {mode, apply(String.to_existing_atom("Elixir.Day#{day}"), :run, [mode])}
+          end,
+          timeout: :infinity
+        )
         |> Enum.map(fn {:ok, res} -> res end)
 
       IO.puts("Day #{day}\n")

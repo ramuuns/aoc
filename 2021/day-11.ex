@@ -133,4 +133,3 @@ defmodule Day11 do
 
   def count_flashes([_ | rest], cnt, map), do: count_flashes(rest, cnt, map)
 end
-
