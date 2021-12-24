@@ -73,61 +73,77 @@ mod w 2"
   end
 
   def split_to_subprograms([], program, subprograms),
-    do: [program |> Enum.reverse() | subprograms] |> Enum.reverse()
+    do: [program |> Enum.reverse() |> optimize() | subprograms] |> Enum.reverse()
 
   def split_to_subprograms([{:inp, _} = inp | rest], [], []),
     do: split_to_subprograms(rest, [inp], [])
 
   def split_to_subprograms([{:inp, _} = inp | rest], prev, all),
-    do: split_to_subprograms(rest, [inp], [prev |> Enum.reverse() | all])
+    do: split_to_subprograms(rest, [inp], [prev |> Enum.reverse() |> optimize() | all])
 
   def split_to_subprograms([cmd | rest], this, all),
     do: split_to_subprograms(rest, [cmd | this], all)
 
+  def optimize(program), do: optimize_inner(program, %{}, [])
+
+  def optimize_inner([], _, p), do: p |> Enum.reverse()
+
+  def optimize_inner([{:mul, what, 0} | rest], seen, p) when not is_map_key(seen, what),
+    do: optimize_inner(rest, seen |> Map.put(what, 1), p)
+
+  def optimize_inner([{_, what, _} = i | rest], seen, p) when not is_map_key(seen, what),
+    do: optimize_inner(rest, seen |> Map.put(what, 1), [i | p])
+
+  def optimize_inner([i | rest], seen, p), do: optimize_inner(rest, seen, [i | p])
+
   def run_until_z_is_zero([], z, input, _, seen, _), do: {z, input, seen}
 
   def run_until_z_is_zero([subprogram | rest], z, input, level, seen, mode) do
-    reduce_step =
-      if mode == :biggest do
-        [9, 8, 7, 6, 5, 4, 3, 2, 1]
-      else
-        [1, 2, 3, 4, 5, 6, 7, 8, 9]
-      end
-      |> Enum.reduce({nil, seen}, fn
-        n, {nil, seen} ->
-          next_z = execute_program_with_input(subprogram, [n], %{x: 0, y: 0, z: z, w: 0})
+    if z > 26 ** if(level < 7, do: level, else: 14 - level) do
+      {z, input, seen}
+    else
+      reduce_step =
+        if mode == :biggest do
+          [9, 8, 7, 6, 5, 4, 3, 2, 1]
+        else
+          [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        end
+        |> Enum.reduce({nil, seen}, fn
+          n, {nil, seen} ->
+            next_z = execute_program_with_input(subprogram, [n], %{x: 0, y: 0, z: z, w: 0})
 
-          if seen |> Map.get(level) |> MapSet.member?(next_z) do
-            {nil, seen}
-          else
-            {res, passed_input, seen} =
-              run_until_z_is_zero(
-                rest,
-                next_z,
-                [n | input],
-                level + 1,
-                if Map.has_key?(seen, level + 1) do
-                  seen
-                else
-                  seen |> Map.put(level + 1, MapSet.new())
-                end,
-                mode
-              )
-
-            if res == 0 do
-              {passed_input, seen}
+            if seen |> Map.get(level) |> MapSet.member?(next_z) do
+              {nil, seen}
             else
-              {nil, seen |> Map.put(level, seen |> Map.get(level) |> MapSet.put(next_z))}
+              {res, passed_input, seen} =
+                run_until_z_is_zero(
+                  rest,
+                  next_z,
+                  [n | input],
+                  level + 1,
+                  if Map.has_key?(seen, level + 1) do
+                    seen
+                  else
+                    seen |> Map.put(level + 1, MapSet.new())
+                  end,
+                  mode
+                )
+
+              if res == 0 do
+                {passed_input, seen}
+              else
+                {nil, seen |> Map.put(level, seen |> Map.get(level) |> MapSet.put(next_z))}
+              end
             end
-          end
 
-        _, ret ->
-          ret
-      end)
+          _, ret ->
+            ret
+        end)
 
-    case reduce_step do
-      {nil, seen} -> {1, [], seen}
-      {good_input, seen} -> {0, good_input, seen}
+      case reduce_step do
+        {nil, seen} -> {1, [], seen}
+        {good_input, seen} -> {0, good_input, seen}
+      end
     end
   end
 
