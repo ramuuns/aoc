@@ -83,14 +83,13 @@ defmodule Day15 do
         {orig_sizex, orig_sizey} = size,
         states
       ) do
-    {{weight, {x, y} = coord}, pq} = pq |> PriorityQueue.pop_next()
+    {{weight, {x, y}}, pq} = pq |> PriorityQueue.pop_next()
 
     cond do
       MapSet.member?(seen, x * 1000 + y) ->
         a_star_this_sucker(pq, grid, seen, tgt, size, states)
 
       x == tgtx and y == tgty ->
-        "states: #{states}" |> IO.puts()
         weight
 
       true ->
