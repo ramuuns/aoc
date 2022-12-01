@@ -46,7 +46,7 @@ sub part_1(@data) {
 }
 
 sub part_2(@data) {
-    return find_top_three_calories(0,0,0, 0, @data);
+    return find_top_three_calories([0,0,0], 0, @data);
 }
 
 sub find_max_calories {
@@ -60,10 +60,10 @@ sub find_max_calories {
 }
 
 sub find_top_three_calories {
-    my ($max1, $max2, $max3, $this_elf, $item, @rest) = @_;
-    return array_sum(0, top_three($max1, $max2, $max3, $this_elf)) unless defined $item;
+    my ($top3, $this_elf, $item, @rest) = @_;
+    return array_sum(top_three($this_elf, @$top3)) unless defined $item;
     @_ = (
-      $item eq "" ? top_three($max1, $max2, $max3, $this_elf) : ($max1, $max2, $max3),
+      $item eq "" ? [top_three($this_elf, @$top3)] : $top3,
       $item eq "" ? 0 : $this_elf + $item,
       @rest
     );
