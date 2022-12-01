@@ -23,7 +23,9 @@ sed -i '' "s/{test-data}/$TEST_DATA/" "Day$ZERO_PADDED_DAY.pm"
 
 COOKIE=$(cat COOKIE)
 
-curl -H"Cookie: session=$COOKIE" "https://adventofcode.com/2022/day/$DAY/input" > "input-$ZERO_PADDED_DAY"
+curl -H"User-Agent: github.com/ramuuns/aoc/blob/master/2022/make_day.sh by ramuuns@ramuuns.com" \
+     -H"Cookie: session=$COOKIE" \
+     "https://adventofcode.com/2022/day/$DAY/input" > "input-$ZERO_PADDED_DAY"
 
 vi "Day$ZERO_PADDED_DAY.pm"
 
