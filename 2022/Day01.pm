@@ -42,30 +42,30 @@ sub prepare_data($data) {
 }
 
 sub part_1(@data) {
-    return find_max_calories(0, 0, @data);
+    return find_max_calories(0, 0, [@data]);
 }
 
 sub part_2(@data) {
-    return find_top_three_calories([0,0,0], 0, @data);
+    return find_top_three_calories([0,0,0], 0, [@data]);
 }
 
-sub find_max_calories {
-    my ($max, $this_elf, $item, @rest) = @_;
-    return $this_elf > $max ? $this_elf : $max unless defined $item;
+sub find_max_calories($max, $this_elf, $data){
+    return $this_elf > $max ? $this_elf : $max unless scalar @$data;
+    my $item = shift @$data;
     @_ = (
       $item eq "" ? ($max > $this_elf ? $max : $this_elf) : $max,
       $item eq "" ? 0 : $this_elf + $item, 
-      @rest);
+      $data);
     goto &find_max_calories;
 }
 
-sub find_top_three_calories {
-    my ($top3, $this_elf, $item, @rest) = @_;
-    return array_sum(top_three($this_elf, @$top3)) unless defined $item;
+sub find_top_three_calories($top3, $this_elf, $data) {
+    return array_sum(top_three($this_elf, @$top3)) unless scalar @$data;
+    my $item = shift @$data;
     @_ = (
       $item eq "" ? [top_three($this_elf, @$top3)] : $top3,
       $item eq "" ? 0 : $this_elf + $item,
-      @rest
+      $data
     );
     goto &find_top_three_calories;
 }

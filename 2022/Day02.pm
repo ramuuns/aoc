@@ -37,37 +37,37 @@ sub prepare_data($data) {
 }
 
 sub part_1(@data) {
-    return score_round_p1(0, @data);
+    return score_round_p1(0, [@data]);
 }
 
 sub part_2(@data) {
-    return score_round_p2(0, @data);
+    return score_round_p2(0, [@data]);
 }
 
-sub score_round_p1 {
-    my ($score, $round, @rest) = @_;
-    return $score unless defined $round;
+sub score_round_p1($score, $data) {
+    return $score unless scalar @$data;
+    my $round = shift @$data;
     my ($opponent, $me) = split / /, $round;
     my $outcome = (($me - $opponent) + 3) % 3;
     @_ = (
       $score 
       + ($outcome+1)%3*3
       + ($me+1), 
-      @rest
+      $data
     );
     goto &score_round_p1;
 }
 
-sub score_round_p2 {
-    my ($score, $round, @rest) = @_;
-    return $score unless defined $round;
+sub score_round_p2($score, $data) {
+    return $score unless scalar @$data;
+    my $round = shift @$data;
     my ($opponent, $outcome) = split / /, $round;
     $outcome = ($outcome + 2) % 3;
     @_ = (
       $score 
       + ($outcome+1)%3*3
       + (($opponent + $outcome)%3 + 1),
-      @rest
+      $data
     );
     goto &score_round_p2;
 }
