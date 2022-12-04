@@ -1,10 +1,8 @@
 package Day04;
 
-use 5.30.0;
-use strict;
+use 5.30;
 use warnings;
-use feature "signatures";
-no warnings "experimental::signatures";
+use experimental 'signatures';
 
 use File::Slurp;
 
