@@ -1,6 +1,6 @@
 package Day04;
 
-use 5.30;
+use v5.30;
 use warnings;
 use experimental 'signatures';
 
