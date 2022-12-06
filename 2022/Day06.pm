@@ -36,20 +36,20 @@ sub part_2(@data) {
     return first_different(\@data, 0, 0, 14 - 1);
 }
 
-sub first_different($data, $i, $duplicate_distance, $min_size) {
-    my $new_dd = find_new_dd($data, $i, $duplicate_distance, 1, $min_size);
-    return $i + 1 if  $i > $min_size && $new_dd > $min_size;
-    @_ = ($data, $i+1, $new_dd, $min_size);
+sub first_different($data, $i, $closest_duplicate_offset, $min_size) {
+    $closest_duplicate_offset = find_closest_duplicate_offset($data, $i, $closest_duplicate_offset + 1, 1, $min_size);
+    return $i + 1 if  $i > $min_size && $closest_duplicate_offset > $min_size;
+    @_ = ($data, $i+1, $closest_duplicate_offset, $min_size);
     goto &first_different;
 }
 
-sub find_new_dd($data, $i, $dd, $newdd, $min_size) {
-    return $dd + 1 if ($i - $newdd) < 0;
-    return $dd + 1 if ($dd + 1) < $newdd;
-    return $newdd if $data->[$i] eq $data->[$i - $newdd];
-    return $dd + 1 if $newdd == $min_size;
-    @_ = ($data, $i, $dd, $newdd + 1, $min_size);
-    goto &find_new_dd;
+sub find_closest_duplicate_offset($data, $i, $old_offset, $new_offset, $min_size) {
+    return $old_offset if ($i - $new_offset) < 0;
+    return $old_offset if $old_offset < $new_offset;
+    return $new_offset if $data->[$i] eq $data->[$i - $new_offset];
+    return $old_offset if $new_offset == $min_size;
+    @_ = ($data, $i, $old_offset, $new_offset + 1, $min_size);
+    goto &find_closest_duplicate_offset;
 }
 
 1;
