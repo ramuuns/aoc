@@ -51,7 +51,7 @@ sub prepare_data($data) {
 }
 
 sub part_1($_meh, @data) {
-    my $flat_dirs = flatten( make_dir_tree( [@data], mk_dir('/')), [] );
+    my $flat_dirs = flatten( [ make_dir_tree( [@data], mk_dir('/'), []) ], [] );
     return sum_total([map { $_->{size} } grep { $_->{size} < 100_000 } @$flat_dirs ], 0);
 }
 
@@ -65,29 +65,34 @@ sub sum_total($arr, $total) {
     goto &sum_total;
 }
 
-sub flatten($tree, $list) {
-    push @$list, map { flatten($_, [])->@* } values $tree->{dirs}->%*;
+sub flatten($queue, $list) {
+    return $list unless scalar @$queue;
+    my $tree = shift @$queue;
     push @$list, $tree;
-    return $list;
+    push @$queue, values $tree->{dirs}->%*;
+    goto &flatten;
 }
 
-sub make_dir_tree($commands, $tree) {
-    return $tree unless scalar @$commands;
-    my $command = shift @$commands;
-    return $tree if $command eq '$ cd ..';
+sub make_dir_tree($commands, $tree, $stack) {
+    return $tree if scalar @$commands == 0 && scalar @$stack == 0;
+    my $command = scalar @$commands ? shift @$commands : '$ cd ..';
+    if ( $command eq '$ cd ..' ) {
+        $stack->[-1]->{size} += $tree->{size};
+        $tree = pop @$stack;
+    }
     $tree->{dirs}{$1} = mk_dir($1) if $command =~ /^dir (\w+)$/;
     $tree->{size} += $1 if $command =~ /^(\d+) /;
     if ( $command =~ /^. cd (\w+)$/ ) {
-      my $d = $1;
-      $tree->{dirs}{$d} = make_dir_tree($commands, $tree->{dirs}{$d});
-      $tree->{size} += $tree->{dirs}{$d}{size};
+      push @$stack, $tree;
+      $tree = $tree->{dirs}{$1};
     }
+    @_ = ($commands, $tree, $stack);
     goto &make_dir_tree;
 }
 
 sub part_2($_meh, @data) {
-    my $tree = make_dir_tree( [@data], mk_dir('/'));
-    my $flat_dirs = flatten( $tree, [] );
+    my $tree = make_dir_tree( [@data], mk_dir('/'), []);
+    my $flat_dirs = flatten( [$tree], [] );
     my $free_space = 70000000 - $tree->{size};
     my $need_space = 30000000 - $free_space;
     return min([map { $_->{size} } grep { $_->{size} > $need_space } @$flat_dirs], undef);
