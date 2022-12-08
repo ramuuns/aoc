@@ -9,9 +9,10 @@ no warnings "experimental::signatures";
 use File::Slurp;
 
 sub run($mode) {
+    my @data = read_input($mode);
     return [
-      part_1(read_input($mode)),
-      part_2(read_input($mode))
+      part_1(@data),
+      part_2(@data)
     ];
 }
 
@@ -30,7 +31,8 @@ TEST_DATA
 sub prepare_data($data) {
     return map {[ map +{ 
         height => $_, 
-        e => undef, w => undef, n => undef, s => undef 
+        e => undef, w => undef, n => undef, s => undef,
+        ve => undef, vw => undef, vn => undef, vs => undef
       }, split //, $_ ]} split /\n/, $data;
 }
 
@@ -144,23 +146,27 @@ sub is_edge($grid, $x, $y) {
 
 sub view($grid, $x, $y, $d, $dir, $origin) {
     if ( is_edge($grid, $x, $y) ) {
-        $origin->{$dir} = $d;
+        $origin->{"v$dir"} = $d;
         return $d;
     }
     my $n = $grid->[$y+$op->{$dir}{y}][$x+$op->{$dir}{x}];
     if ( $n->{height} >= $origin->{height} ) {
-        $origin->{$dir} = $d + 1;
+        $origin->{"v$dir"} = $d + 1;
         return $d + 1;
     }
-    unless ( defined $n->{$dir} ) {
+    unless ( defined $n->{"v$dir"} ) {
+        if ( $n->{$dir} < $origin->{height} ) {
+            $origin->{"v$dir"} = $d + ($dir eq 'e' ? scalar $grid->[$y]->@* - $x : scalar @$grid - $y) - 1;
+            return $origin->{"v$dir"};
+        }
         @_ = ($grid, $x+$op->{$dir}{x}, $y+$op->{$dir}{y}, $d+1, $dir, $origin);
         goto &view;
     }
-    if ( $n->{$dir} == 0 ) {
-        $origin->{$dir} = $d + 1;
+    if ( $n->{"v$dir"} == 0 ) {
+        $origin->{"v$dir"} = $d + 1;
         return $d + 1;
     }
-    @_ = ($grid, $x + $op->{$dir}{x} * $n->{$dir}, $y + $op->{$dir}{y} * $n->{$dir}, $d + $n->{$dir}, $dir, $origin);
+    @_ = ($grid, $x + $op->{$dir}{x} * $n->{"v$dir"}, $y + $op->{$dir}{y} * $n->{"v$dir"}, $d + $n->{"v$dir"}, $dir, $origin);
     goto &view;
 }
 
