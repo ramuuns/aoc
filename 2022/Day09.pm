@@ -36,23 +36,7 @@ sub prepare_data($data) {
 }
 
 sub part_1(@data) {
-    return scalar keys get_the_tail_positions([@data], { hx=> 0, hy =>0, tx => 0,ty =>0 }, {'0,0' => 1})->%*;
-}
-
-sub get_the_tail_positions($instructions, $rope, $tail_positions) {
-    return $tail_positions unless scalar @$instructions;
-    my $instr = shift @$instructions;
-    my ($dir, $amount) = split / /, $instr;
-    move($rope, $tail_positions, $dir, $amount);
-    goto &get_the_tail_positions;
-}
-
-sub move($rope, $tail_positions, $dir, $amount) {
-    return if $amount == 0;
-    move_head($rope, $dir);
-    tail_head($rope, $tail_positions);
-    @_ = ($rope, $tail_positions, $dir, $amount-1);
-    goto &move;
+    return scalar keys get_the_tail_positions_arr([@data], [{ hx=> 0, hy =>0, tx => 0,ty =>0 }], [{'0,0' => 1}])->[0]->%*;
 }
 
 my %moves = (
@@ -78,14 +62,6 @@ sub tail_head($rope, $tail_positions) {
 
 sub close_enough($rope) {
     return abs($rope->{hx}-$rope->{tx}) < 2 && abs($rope->{hy}-$rope->{ty}) < 2;
-}
-
-sub make_el() {
-    { hx=> 0, hy =>0, tx => 0,ty =>0 }
-}
-
-sub make_tail() {
-    {'0,0' => 1}
 }
 
 sub mk_arr($arr, $maker_sub, $i) {
