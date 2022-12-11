@@ -6,7 +6,6 @@ use warnings;
 use feature "signatures";
 no warnings "experimental::signatures";
 
-use Math::BigInt;
 use File::Slurp;
 
 sub run($mode) {
@@ -64,13 +63,11 @@ sub make_monkeys($data, $monkeys) {
     } else {
         $monkey = pop @$monkeys;
     }
-    $monkey->{items} = [map { Math::BigInt->new($_) } split /, /, $1] if $row =~ /^  Starting items: (.+)/;
+    $monkey->{items} = [map { $_ } split /, /, $1] if $row =~ /^  Starting items: (.+)/;
     if ( $row =~ /Operation: new = (.+)/ ) {
         my $op = $1;
-        $op =~ s/old \+ (\d+)/\$old->badd(Math::BigInt->new('$1'))/;
-        $op =~ s/old \* old/\$old->bpow(Math::BigInt->new('2'))/;
-        $op =~ s/old \* (\d+)/\$old->bmul(Math::BigInt->new('$1'))/;
-        $monkey->{op} = sub ($old) { return eval $op; };
+        $op =~ s/old/\$old/g;
+        $monkey->{op} = eval 'sub ($old) { return '.$op.' }';
     }
     $monkey->{test} = $1 if $row =~ /Test: divisible by (\d+)/;
     $monkey->{if_true} = $1 if $row =~ /If true: throw to monkey (\d+)/;
@@ -107,12 +104,11 @@ sub inspect_items($monkeys, $inspect_count, $idx, $worry) {
     my $item = shift $monkey->{items}->@*;
     $item = $monkey->{op}->($item);
     if ($worry) {
-        $item = $item->bmod(Math::BigInt->new(eval join ' * ', map { $_->{test} } $monkeys->@*));
+        $item = $item % $worry;
     } else {
-        $item = $item->bdiv(Math::BigInt->new('3'));
+        $item = $item / 3;
     }
-    my $test = $item->copy()->bmod(Math::BigInt->new($monkey->{test}))->as_int();
-    if ( $test == 0 ) {
+    if ( $item % $monkey->{test} == 0 ) {
         push $monkeys->[ $monkey->{if_true} ]->{items}->@*, $item;
     } else {
         push $monkeys->[ $monkey->{if_false} ]->{items}->@*, $item;
@@ -121,7 +117,7 @@ sub inspect_items($monkeys, $inspect_count, $idx, $worry) {
 }
 
 sub part_2(@data) {
-    my @ret = sort {$b - $a} monkey_business([@data], 0, 10_000, [], 1)->@*;
+    my @ret = sort {$b - $a} monkey_business([@data], 0, 10_000, [], (eval join ' * ', map { $_->{test} } @data) )->@*;
     return $ret[0] * $ret[1];
 }
 
