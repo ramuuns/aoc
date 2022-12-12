@@ -6,6 +6,8 @@ use warnings;
 use feature "signatures";
 no warnings "experimental::signatures";
 
+use Pq qw/pq_push pq_pop/;
+
 use File::Slurp;
 
 sub run($mode) {
@@ -61,28 +63,21 @@ sub check_row($grid, $start, $end, $y, $x, $found) {
 }
 
 sub part_1($grid, $start, $end) {
-    return find_min_steps($grid, [@$start], $end, 0, { (join 'x', @$start ) => 1 }, []);
+    return find_min_steps($grid, [@$start], $end, 0, { (join 'x', @$start ) => 1 }, {});
 }
-
-sub min($arr, $min) {
-    return $min unless scalar @$arr;
-    my $item = shift @$arr;
-    $min = $item unless defined $min;
-    $min = $item if $item < $min;
-    @_ = ($arr, $min);
-    goto &min;
-}
-
-use Data::Dumper;
 
 sub find_min_steps($grid, $pos, $end, $steps, $seen, $pq) {
     return $steps if $pos->[0] == $end->[0] && $pos->[1] == $end->[1];
-    my @neighbors = grep { $_->[0] >= 0 && $_->[1] >= 0 && defined $grid->[$_->[0]] && defined $grid->[$_->[0]][$_->[1]] && ! defined $seen->{join 'x', @$_} } neighbors($pos)->@*;
+    my @neighbors = grep {
+        $_->[0] >= 0 && $_->[1] >= 0 #lower bounds check
+      && defined $grid->[$_->[0]] && defined $grid->[$_->[0]][$_->[1]] # upper bounds check
+      && (!defined $seen->{join 'x', @$_} || $seen->{join 'x', @$_} > $steps + 1) # not visited or visited via a longer path
+    } neighbors($pos)->@*;
     my $curr = $grid->[$pos->[0]][$pos->[1]];
     @neighbors = grep { not_much_higher($grid, $curr, $_) } @neighbors;
-    $seen->{join 'x', @$_} = 1 for @neighbors;
-    push @$pq, [$steps + 1, $_] for @neighbors;
-    my $next = shift @$pq;
+    $seen->{join 'x', @$_} = $steps + 1 for @neighbors;
+    pq_push($pq, $steps + 1 + md($_, $end), [$steps + 1, $_]) for @neighbors;
+    my $next = pq_pop($pq);
     @_ = ($grid, $next->[1], $end, $next->[0], $seen, $pq );
     goto &find_min_steps;
 }
