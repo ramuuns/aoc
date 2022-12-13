@@ -47,10 +47,30 @@ TEST_DATA
 }
 
 sub prepare_data($data, $p) {
-    return map { map { eval $_ } split /\n/, $_ } split /\n\n/, $data if $p == 2;
-    return map { [ map { eval $_ } split /\n/, $_ ] } split /\n\n/, $data;
+    return map { map { parse_into_list([split(//, $_)], [], [], 0) } split /\n/, $_ } split /\n\n/, $data if $p == 2;
+    return map { [ map { parse_into_list([split(//, $_)], [], [], 0) } split /\n/, $_ ] } split /\n\n/, $data;
 }
 
+sub parse_into_list($tokens, $ret, $index_stack, $index) {
+    return $ret unless scalar @$tokens;
+    my $token = shift @$tokens;
+    if ( $token eq '[' ) {
+        my $arr = item($ret, $index_stack, 0);
+        $arr->[$index] = [];
+        push @$index_stack, $index;
+        $index = 0;
+    } elsif ( $token eq ']' ) {
+        $index = pop @$index_stack;
+    } elsif ( $token eq ',' ) {
+        $index++;
+    } else {
+        my $arr = item($ret, $index_stack, 0);
+        $arr->[$index] //= 0;
+        $arr->[$index] = $arr->[$index]*10 + $token;
+    }
+    @_ = ($tokens, $ret, $index_stack, $index);
+    goto &parse_into_list;
+}
 
 sub part_1(@data) {
     return check_order(\@data, 0, 0);
