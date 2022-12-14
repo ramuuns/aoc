@@ -63,10 +63,11 @@ sub check_row($grid, $start, $end, $y, $x, $found) {
 }
 
 sub part_1($grid, $start, $end) {
-    return find_min_steps($grid, [@$start], $end, 0, { (join 'x', @$start ) => 1 }, {});
+    return find_min_steps($grid, [@$start], $end, 0, { (join 'x', @$start ) => 1 }, [], 0);
 }
 
-sub find_min_steps($grid, $pos, $end, $steps, $seen, $pq) {
+sub find_min_steps($grid, $pos, $end, $steps, $seen, $pq, $iter) {
+    say $iter if $pos->[0] == $end->[0] && $pos->[1] == $end->[1];
     return $steps if $pos->[0] == $end->[0] && $pos->[1] == $end->[1];
     my @neighbors = grep {
         $_->[0] >= 0 && $_->[1] >= 0 #lower bounds check
@@ -76,9 +77,12 @@ sub find_min_steps($grid, $pos, $end, $steps, $seen, $pq) {
     my $curr = $grid->[$pos->[0]][$pos->[1]];
     @neighbors = grep { not_much_higher($grid, $curr, $_) } @neighbors;
     $seen->{join 'x', @$_} = $steps + 1 for @neighbors;
-    pq_push($pq, $steps + 1 + md($_, $end), [$steps + 1, $_]) for @neighbors;
-    my $next = pq_pop($pq);
-    @_ = ($grid, $next->[1], $end, $next->[0], $seen, $pq );
+    #pq_push($pq, $steps + 1 + md($_, $end), [$steps + 1, $_]) for @neighbors;
+    #pq_push($pq, $steps + 1, [$steps + 1, $_]) for @neighbors;
+    push @$pq, [$steps + 1, $_] for @neighbors;
+    #my $next = pq_pop($pq);
+    my $next = shift @$pq;
+    @_ = ($grid, $next->[1], $end, $next->[0], $seen, $pq, $iter + 1 );
     goto &find_min_steps;
 }
 
