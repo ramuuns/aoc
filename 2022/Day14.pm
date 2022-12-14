@@ -89,31 +89,19 @@ sub drop_sand_until_out_of_grid($grid, $x, $y, $sand_cnt) {
 
 sub part_2($grid) {
     push @$grid, [];
-    return drop_sand_until_out_of_room($grid, 500, 0, 1);
+    return drop_sand_until_out_of_room($grid, [[500, 0]], 1);
 }
 
-sub drop_sand_until_out_of_room($grid, $x, $y, $sand_cnt) {
-    return $sand_cnt - 1 if $x == 500 && $y == 0 && defined $grid->[0][500];
-    if ( $y + 1 == scalar @$grid ) {
-        $grid->[$y][$x] = 'o';
-        $x = 500;
-        $y = 0;
-        $sand_cnt++;
-    } elsif ( ! defined $grid->[$y+1][$x] ) {
-        $y++;
-    } elsif ( ! defined $grid->[$y+1][$x-1] ) {
-        $y++;
-        $x--;
-    } elsif ( ! defined $grid->[$y+1][$x+1] ) {
-        $y++;
-        $x++;
-    } else {
-        $grid->[$y][$x] = 'o';
-        $x = 500;
-        $y = 0;
-        $sand_cnt++;
+sub drop_sand_until_out_of_room($grid, $deq, $seen) {
+    return $seen unless scalar @$deq;
+    my ( $x, $y ) = shift(@$deq)->@*;
+    if ( $y + 1 < scalar @$grid ) {
+        my @cand = ([$x-1, $y+1], [$x, $y+1], [$x+1, $y+1]);
+        @cand = grep { !defined $grid->[$_->[1]][$_->[0]] } @cand;
+        $grid->[$_->[1]][$_->[0]] = 'o' for @cand;
+        push @$deq, @cand;
+        @_ = ($grid, $deq, $seen + scalar @cand);
     }
-    @_ = ($grid, $x, $y, $sand_cnt);
     goto &drop_sand_until_out_of_room;
 }
 
