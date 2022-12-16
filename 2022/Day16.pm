@@ -87,6 +87,7 @@ sub bitmask($n, $k) {
 sub part_2($graph) {
     my @targets = map { $_->{name} } sort { $b->{flow_rate} <=> $a->{flow_rate} } grep { $_->{flow_rate} > 0 } values %$graph;
     my ($p1, $path1) = max_pressure_release($graph, \@targets, [['AA', 26, 0, {}, []]], [0, []])->@*;
+    shift @$path1; #drop the AA
     my $best = $p1;
     my $p1_len = scalar @$path1;
     return elephant_pressure($graph, (2 ** $p1_len) - 1, \@targets, $best, $path1, $p1_len);
