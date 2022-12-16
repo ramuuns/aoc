@@ -47,42 +47,27 @@ sub prepare_data($data) {
 
 sub part_1($graph) {
     my @targets = map { $_->{name} } sort { $b->{flow_rate} <=> $a->{flow_rate} } grep { $_->{flow_rate} > 0 } values %$graph;
-    my @sorted = sort { $b->[0] <=> $a->[0] } all_pressure_release($graph, \@targets, [['AA', 30, 0, {}] ], [] )->@*;
+    my @sorted = sort { $b->[0] <=> $a->[0] } all_pressure_release($graph, \@targets, [['AA', 30, 0, {}] ], {} )->@*;
     return (shift @sorted )->[0];
 }
 
 sub all_pressure_release($graph, $targets, $deq, $results) {
     state $distances;
-    return $results unless scalar @$deq;
+    return [values %$results] unless scalar @$deq;
     my ($curr, $t_left, $pressure, $seen) = shift(@$deq)->@*;
-    my @candidates = grep {
-        $_->[2] > 0
-    } map {
-        my $d_key = join '', sort ($curr, $_);
-        my $dist = $distances->{$d_key} //= dist($graph, $_, { $curr => 1 }, [[$curr, 0]]);
-        my $p = ($t_left - $dist - 1) * $graph->{$_}->{flow_rate};
-        [$_, $dist, $p]
-    } grep { !$seen->{$_} } @$targets;
-    push @$deq, [$_->[0], $t_left - $_->[1] - 1, $pressure + $_->[2], { %$seen, $_->[0] => 1 } ] for @candidates;
-    push @$results, [$pressure, $seen];
+    if ( ! defined $results->{$curr.path_key($seen)} || $results->{$curr.path_key($seen)}->[0] <= $pressure ) {
+      my @candidates = grep {
+          $_->[2] > 0
+      } map {
+          my $d_key = join '', sort ($curr, $_);
+          my $dist = $distances->{$d_key} //= dist($graph, $_, { $curr => 1 }, [[$curr, 0]]);
+          my $p = ($t_left - $dist - 1) * $graph->{$_}->{flow_rate};
+          [$_, $dist, $p]
+      } grep { !$seen->{$_} } @$targets;
+      push @$deq, [$_->[0], $t_left - $_->[1] - 1, $pressure + $_->[2], { %$seen, $_->[0] => 1 } ] for @candidates;
+      $results->{$curr.path_key($seen)} = [$pressure, $seen];
+    }
     goto &all_pressure_release;
-}
-
-sub max_pressure_release($graph, $targets, $deq, $best) {
-    state $distances;
-    return $best unless scalar @$deq;
-    my ($curr, $t_left, $pressure, $seen, $path) = shift(@$deq)->@*;
-    my @candidates = grep {
-        $_->[2] > 0
-    } map {
-        my $d_key = join '', sort ($curr, $_);
-        my $dist = $distances->{$d_key} //= dist($graph, $_, { $curr => 1 }, [[$curr, 0]]);
-        my $p = ($t_left - $dist - 1) * $graph->{$_}->{flow_rate};
-        [$_, $dist, $p]
-    } grep { !$seen->{$_} } @$targets;
-    push @$deq, [$_->[0], $t_left - $_->[1] - 1, $pressure + $_->[2], { %$seen, $_->[0] => 1 }, [ @$path, $curr ] ] for @candidates;
-    @_ = ($graph, $targets, $deq, $best->[0] < $pressure ? [ $pressure, [ @$path, $curr ] ] : $best);
-    goto &max_pressure_release;
 }
 
 sub dist($graph, $tgt, $seen, $deq) {
@@ -95,10 +80,15 @@ sub dist($graph, $tgt, $seen, $deq) {
     goto &dist;
 }
 
+
+sub path_key($path) {
+    join ',', sort keys $path->%*
+}
+
 sub make_distinct($paths, $ret) {
     return $ret unless scalar @$paths;
     my $path = shift @$paths;
-    my $path_key = join('', (sort (keys $path->[1]->%*)));
+    my $path_key = path_key($path->[1]);
     $ret->{$path_key} //= $path;
     $ret->{$path_key} = $path if $path->[0] > $ret->{$path_key}[0];
     goto &make_distinct;
@@ -107,7 +97,7 @@ sub make_distinct($paths, $ret) {
 sub part_2($graph) {
     my @targets = map { $_->{name} } sort { $b->{flow_rate} <=> $a->{flow_rate} } grep { $_->{flow_rate} > 0 } values %$graph;
     my $start = time;
-    my @all_paths = all_pressure_release($graph, \@targets, [['AA', 26, 0, {}] ], [] )->@*;
+    my @all_paths = all_pressure_release($graph, \@targets, [['AA', 26, 0, {}] ], {} )->@*;
     my $got_graph = time;
     my @distinct_paths = sort { $b->[0] <=> $a->[0] } values make_distinct(\@all_paths, {})->%*;
     return max_sum(\@distinct_paths, 0, 1, scalar @distinct_paths, 0);
