@@ -254,6 +254,7 @@ sub add_to_board($board, $shape, $y) {
 
 sub part_2(@moves) {
     my $b = do_the_tetris(\@moves, 0, shapes(), 0, 1_000_000_000_000, { found_cycle => 0, skips => 0, min_y => 0, width => 7, height => 0, board => [] });
+    say "size of period: $b->{cycle_size}, it adds $b->{cycle_height} to the height";
     return $b->{height} + ($b->{skips} - 1)  * $b->{cycle_height};
 }
 
