@@ -1,4 +1,4 @@
-defmodule DayTHE_DAY do
+defmodule DayNZ_DAY do
   def run(mode) do
     data = read_input(mode)
 
@@ -17,7 +17,7 @@ defmodule DayTHE_DAY do
   end
 
   def read_input(:test) do
-    "TEST_DATA"
+    "{test-data}"
     |> String.split("\n")
     |> prepare_data
   end
@@ -39,5 +39,4 @@ defmodule DayTHE_DAY do
   def part2(data) do
     2
   end
-
 end

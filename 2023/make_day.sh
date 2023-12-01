@@ -7,13 +7,14 @@ if [[ $DAY -lt 10 ]]; then
   ZERO_PADDED_DAY="0$DAY"
 fi
 
-if [[ "$YEAR" != "22" ]]; then
+if [[ "$YEAR" != "23" ]]; then
   ZERO_PADDED_DAY="$YEAR$ZERO_PADDED_DAY"
 fi 
 
 cp template.ex "day-$ZERO_PADDED_DAY.ex"
 
 sed -i '' "s/THE_DAY/$ZERO_PADDED_DAY/g" "day-$ZERO_PADDED_DAY.ex"
+sed -i '' "s/NZ_DAY/$DAY/g" "day-$ZERO_PADDED_DAY.ex"
 
 temp_file=$(mktemp)
 vi $temp_file
