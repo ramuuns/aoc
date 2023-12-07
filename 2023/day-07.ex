@@ -81,7 +81,7 @@ QQQJA 483"
       [cards, bid] = String.split(s, " ", trim: true)
       bid = String.to_integer(bid)
       type = cards |> get_type(1)
-      {type, cards, bid}
+      {card_mapper({type, cards}), bid}
     end)
   end
 
@@ -91,7 +91,7 @@ QQQJA 483"
       [cards, bid] = String.split(s, " ", trim: true)
       bid = String.to_integer(bid)
       type = cards |> get_type(2)
-      {type, cards, bid}
+      {card_mapper_2({type, cards}), bid}
     end)
   end
 
@@ -184,8 +184,8 @@ QQQJA 483"
   def part1(data) do
     {_, sum} =
       data
-      |> Enum.sort_by(&card_mapper/1)
-      |> Enum.reduce({1, 0}, fn {_, _, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
+      |> Enum.sort()
+      |> Enum.reduce({1, 0}, fn {_, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
 
     sum
   end
@@ -193,20 +193,20 @@ QQQJA 483"
   def part2(data) do
     {_, sum} =
       data
-      |> Enum.sort_by(&card_mapper_2/1)
-      |> Enum.reduce({1, 0}, fn {_, _, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
+      |> Enum.sort()
+      |> Enum.reduce({1, 0}, fn {_, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
 
     sum
   end
 
-  def card_mapper({type, cards, _}), do: card_str_to_int(cards, @card_type_order[type])
+  def card_mapper({type, cards}), do: card_str_to_int(cards, @card_type_order[type])
 
   def card_str_to_int("", res), do: res
 
   def card_str_to_int(<<c::utf8, rest::binary>>, res),
     do: card_str_to_int(rest, res * 13 + @card_order[c])
 
-  def card_mapper_2({type, cards, _}), do: card_str_to_int_2(cards, @card_type_order[type])
+  def card_mapper_2({type, cards}), do: card_str_to_int_2(cards, @card_type_order[type])
 
   def card_str_to_int_2("", res), do: res
 
