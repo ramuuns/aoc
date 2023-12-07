@@ -18,16 +18,33 @@ defmodule Day7 do
   end
 
   @card_type_order %{
-    five_of_a_kind: 1,
-    four_of_a_kind: 2,
-    full_house: 3,
-    three_of_a_kind: 4,
-    two_pairs: 5,
-    one_pair: 6,
-    high_card: 7
+    five_of_a_kind: 6,
+    four_of_a_kind: 5,
+    full_house: 4,
+    three_of_a_kind: 3,
+    two_pairs: 2,
+    one_pair: 1,
+    high_card: 0
   }
 
   @card_order %{
+    ?2 => 0,
+    ?3 => 1,
+    ?4 => 2,
+    ?5 => 3,
+    ?6 => 4,
+    ?7 => 5,
+    ?8 => 6,
+    ?9 => 7,
+    ?T => 8,
+    ?J => 9,
+    ?Q => 10,
+    ?K => 11,
+    ?A => 12
+  }
+
+  @card_order_p2 %{
+    ?J => 0,
     ?2 => 1,
     ?3 => 2,
     ?4 => 3,
@@ -37,26 +54,9 @@ defmodule Day7 do
     ?8 => 7,
     ?9 => 8,
     ?T => 9,
-    ?J => 10,
-    ?Q => 11,
-    ?K => 12,
-    ?A => 13
-  }
-
-  @card_order_p2 %{
-    ?J => 1,
-    ?2 => 2,
-    ?3 => 3,
-    ?4 => 4,
-    ?5 => 5,
-    ?6 => 6,
-    ?7 => 7,
-    ?8 => 8,
-    ?9 => 9,
-    ?T => 10,
-    ?Q => 11,
-    ?K => 12,
-    ?A => 13
+    ?Q => 10,
+    ?K => 11,
+    ?A => 12
   }
 
   def read_input(:test, part) do
@@ -184,7 +184,7 @@ QQQJA 483"
   def part1(data) do
     {_, sum} =
       data
-      |> Enum.sort(&card_sort/2)
+      |> Enum.sort_by(&card_mapper/1)
       |> Enum.reduce({1, 0}, fn {_, _, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
 
     sum
@@ -193,31 +193,23 @@ QQQJA 483"
   def part2(data) do
     {_, sum} =
       data
-      |> Enum.sort(&card_sort_2/2)
+      |> Enum.sort_by(&card_mapper_2/1)
       |> Enum.reduce({1, 0}, fn {_, _, bid}, {rank, sum} -> {rank + 1, rank * bid + sum} end)
 
     sum
   end
 
-  def card_sort({type, cards_a, _}, {type, cards_b, _}), do: card_compare(cards_a, cards_b)
+  def card_mapper({type, cards, _}), do: card_str_to_int(cards, @card_type_order[type])
 
-  def card_sort({type_a, _, _}, {type_b, _, _}),
-    do: Map.get(@card_type_order, type_a) > Map.get(@card_type_order, type_b)
+  def card_str_to_int("", res), do: res
 
-  def card_compare(<<a::utf8, rest_a::binary>>, <<a::utf8, rest_b::binary>>),
-    do: card_compare(rest_a, rest_b)
+  def card_str_to_int(<<c::utf8, rest::binary>>, res),
+    do: card_str_to_int(rest, res * 13 + @card_order[c])
 
-  def card_compare(<<a::utf8, _::binary>>, <<b::utf8, _::binary>>),
-    do: Map.get(@card_order, a) < Map.get(@card_order, b)
+  def card_mapper_2({type, cards, _}), do: card_str_to_int_2(cards, @card_type_order[type])
 
-  def card_sort_2({type, cards_a, _}, {type, cards_b, _}), do: card_compare_2(cards_a, cards_b)
+  def card_str_to_int_2("", res), do: res
 
-  def card_sort_2({type_a, _, _}, {type_b, _, _}),
-    do: Map.get(@card_type_order, type_a) > Map.get(@card_type_order, type_b)
-
-  def card_compare_2(<<a::utf8, rest_a::binary>>, <<a::utf8, rest_b::binary>>),
-    do: card_compare_2(rest_a, rest_b)
-
-  def card_compare_2(<<a::utf8, _::binary>>, <<b::utf8, _::binary>>),
-    do: Map.get(@card_order_p2, a) < Map.get(@card_order_p2, b)
+  def card_str_to_int_2(<<c::utf8, rest::binary>>, res),
+    do: card_str_to_int_2(rest, res * 13 + @card_order_p2[c])
 end
