@@ -199,37 +199,25 @@ QQQJA 483"
     sum
   end
 
-  def card_sort({type_a, cards_a, _}, {type_b, cards_b, _}) do
-    st_a = Map.get(@card_type_order, type_a)
-    st_b = Map.get(@card_type_order, type_b)
+  def card_sort({type, cards_a, _}, {type, cards_b, _}), do: card_compare(cards_a, cards_b)
 
-    if st_a == st_b do
-      card_compare(cards_a, cards_b)
-    else
-      st_a > st_b
-    end
-  end
+  def card_sort({type_a, _, _}, {type_b, _, _}),
+    do: Map.get(@card_type_order, type_a) > Map.get(@card_type_order, type_b)
 
   def card_compare(<<a::utf8, rest_a::binary>>, <<a::utf8, rest_b::binary>>),
     do: card_compare(rest_a, rest_b)
 
-  def card_compare(<<a::utf8, _::binary>>, <<b::utf8, rest::binary>>),
+  def card_compare(<<a::utf8, _::binary>>, <<b::utf8, _::binary>>),
     do: Map.get(@card_order, a) < Map.get(@card_order, b)
 
-  def card_sort_2({type_a, cards_a, _}, {type_b, cards_b, _}) do
-    st_a = Map.get(@card_type_order, type_a)
-    st_b = Map.get(@card_type_order, type_b)
+  def card_sort_2({type, cards_a, _}, {type, cards_b, _}), do: card_compare_2(cards_a, cards_b)
 
-    if st_a == st_b do
-      card_compare_2(cards_a, cards_b)
-    else
-      st_a > st_b
-    end
-  end
+  def card_sort_2({type_a, _, _}, {type_b, _, _}),
+    do: Map.get(@card_type_order, type_a) > Map.get(@card_type_order, type_b)
 
   def card_compare_2(<<a::utf8, rest_a::binary>>, <<a::utf8, rest_b::binary>>),
     do: card_compare_2(rest_a, rest_b)
 
-  def card_compare_2(<<a::utf8, _::binary>>, <<b::utf8, rest::binary>>),
+  def card_compare_2(<<a::utf8, _::binary>>, <<b::utf8, _::binary>>),
     do: Map.get(@card_order_p2, a) < Map.get(@card_order_p2, b)
 end
