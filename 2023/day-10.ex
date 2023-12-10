@@ -68,10 +68,11 @@ L7II||IIFJ
         end
       )
 
-    {start, map}
+    the_grid_as_lists = data |> Enum.map(fn s -> s |> String.split("", trim: true) end)
+    {start, map, the_grid_as_lists}
   end
 
-  def part1({start, map}) do
+  def part1({start, map, _}) do
     [one, two] = find_neighbors(start, map)
     {size, _} = find_furthest(one, two, map, MapSet.new([start]), 1)
     size
@@ -146,7 +147,146 @@ L7II||IIFJ
   def connects(_, _, "S", _), do: true
   def connects(_, _, _, _), do: false
 
-  def part2({start, map}) do
+  def part2({start, map, grid}) do
+    [one, two] = find_neighbors(start, map)
+    derived_s = derive_s(start, one, two)
+    {_, pipe} = find_furthest(one, two, map, MapSet.new([start]), 1)
+
+    cnt =
+      grid
+      |> Enum.with_index(fn row, y ->
+        case start do
+          {^y, _} ->
+            {y,
+             row
+             |> Enum.map(fn
+               "S" -> derived_s
+               el -> el
+             end)}
+
+          _ ->
+            {y, row}
+        end
+      end)
+      |> Enum.reduce(0, fn {y, row}, inside_count ->
+        count_row_inside(row, inside_count, pipe, [], false, y, 0)
+      end)
+
+    cnt
+  end
+
+  def count_row_inside([], cnt, _, _, _, _, _), do: cnt
+
+  def count_row_inside(["|" | rest], cnt, pipe, stack, is_inside, y, x) do
+    if MapSet.member?(pipe, {y, x}) do
+      count_row_inside(rest, cnt, pipe, stack, not is_inside, y, x + 1)
+    else
+      count_row_inside(
+        rest,
+        if is_inside do
+          cnt + 1
+        else
+          cnt
+        end,
+        pipe,
+        stack,
+        is_inside,
+        y,
+        x + 1
+      )
+    end
+  end
+
+  def count_row_inside(["-" | rest], cnt, pipe, stack, is_inside, y, x) do
+    if MapSet.member?(pipe, {y, x}) do
+      count_row_inside(rest, cnt, pipe, stack, is_inside, y, x + 1)
+    else
+      count_row_inside(
+        rest,
+        if is_inside do
+          cnt + 1
+        else
+          cnt
+        end,
+        pipe,
+        stack,
+        is_inside,
+        y,
+        x + 1
+      )
+    end
+  end
+
+  def count_row_inside([h | rest], cnt, pipe, stack, is_inside, y, x) when h == "F" or h == "L" do
+    if MapSet.member?(pipe, {y, x}) do
+      count_row_inside(rest, cnt, pipe, [h | stack], is_inside, y, x + 1)
+    else
+      count_row_inside(
+        rest,
+        if is_inside do
+          cnt + 1
+        else
+          cnt
+        end,
+        pipe,
+        stack,
+        is_inside,
+        y,
+        x + 1
+      )
+    end
+  end
+
+  def count_row_inside([h | rest], cnt, pipe, [c | stack], is_inside, y, x)
+      when (c == "L" or c == "F") and (h == "7" or h == "J") do
+    if MapSet.member?(pipe, {y, x}) do
+      count_row_inside(
+        rest,
+        cnt,
+        pipe,
+        stack,
+        if (c == "F" and h == "7") or (c == "L" and h == "J") do
+          is_inside
+        else
+          not is_inside
+        end,
+        y,
+        x + 1
+      )
+    else
+      count_row_inside(
+        rest,
+        if is_inside do
+          cnt + 1
+        else
+          cnt
+        end,
+        pipe,
+        [c | stack],
+        is_inside,
+        y,
+        x + 1
+      )
+    end
+  end
+
+  def count_row_inside([_ | rest], cnt, pipe, stack, is_inside, y, x) do
+    count_row_inside(
+      rest,
+      if is_inside do
+        cnt + 1
+      else
+        cnt
+      end,
+      pipe,
+      stack,
+      is_inside,
+      y,
+      x + 1
+    )
+  end
+
+  def part2_original({start, map, _}) do
     [one, two] = find_neighbors(start, map)
     derived_s = derive_s(start, one, two)
     map = Map.put(map, start, derived_s)
@@ -180,9 +320,6 @@ L7II||IIFJ
     if MapSet.member?(seen, p) do
       flood_area(rest, pipe, map, seen, area, is_outside)
     else
-      # print_seen(p, seen, map, pipe)
-      # {"regular point", p} |> IO.inspect()
-
       neighbors =
         [
           {y - 1, x - 1},
@@ -243,8 +380,6 @@ L7II||IIFJ
       flood_area(rest, pipe, map, seen, area, is_outside)
     else
       seen = seen |> MapSet.put(p)
-      # print_seen(p, seen, map, pipe)
-      # {"pipe point", p} |> IO.inspect()
       normal_neighbor = {y + dy, x + dx}
 
       neighbors =
@@ -275,15 +410,7 @@ L7II||IIFJ
         |> Enum.filter(fn {py, px, ny, nx} ->
           valid_normal({py, px}, {ny, nx}, map)
         end)
-        #    |> Enum.filter(fn {py, px, ny, nx} ->
-        #      not (py + ny == y and px + nx == x)
-        #    end) 
         |> Enum.filter(fn p -> not MapSet.member?(seen, p) end)
-
-      #   |> Enum.map(fn {py, px, ny, nx} = newp ->
-      #     {Map.get(map, {y,x}), {dy, dx}, Map.get(map, {py,px}), {ny, nx}} |> IO.inspect()
-      #     newp
-      #  end) 
 
       flood_area(
         non_pipe_neighbors ++ pipe_neighbors ++ rest,
@@ -306,7 +433,7 @@ L7II||IIFJ
     end
   end
 
-  def print_seen({py, px} = p, seen, map, pipe) do
+  def print_seen({py, px}, seen, map, pipe) do
     0..20
     |> Enum.map(fn y ->
       0..20
@@ -324,7 +451,7 @@ L7II||IIFJ
     |> IO.puts()
   end
 
-  def print_seen({py, px, dy, dx} = p, seen, map, pipe) do
+  def print_seen({py, px, dy, dx}, seen, map, pipe) do
     0..20
     |> Enum.map(fn y ->
       0..20
@@ -388,7 +515,7 @@ L7II||IIFJ
     |> IO.puts()
   end
 
-  def normal({dy, dx}, {y, x} = p, {prev_y, prev_x} = prev, map) do
+  def normal({dy, dx}, p, prev, map) do
     curve = Map.get(map, p)
 
     case curve do
@@ -400,50 +527,41 @@ L7II||IIFJ
 
       _ ->
         prev_curve = Map.get(map, prev)
+        {ny, nx} = normal({dy, dx}, p, map)
 
         cond do
           (prev_curve == "J" or prev_curve == "|") and curve == "7" and dx == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "7" or prev_curve == "-") and curve == "F" and dy == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "F" or prev_curve == "|") and curve == "L" and dx == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "L" or prev_curve == "-") and curve == "J" and dy == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "J" or prev_curve == "-") and curve == "L" and dy == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "7" or prev_curve == "|") and curve == "J" and dx == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "F" or prev_curve == "-") and curve == "7" and dy == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           (prev_curve == "L" or prev_curve == "|") and curve == "F" and dx == 0 ->
-            {ny, nx} = normal({dy, dx}, p, map)
             {-ny, -nx}
 
           true ->
-            normal({dy, dx}, p, map)
+            {ny, nx}
         end
     end
   end
 
-  def normal({dy, dx}, {y, x} = p, map) do
+  def normal({dy, dx}, p, map) do
     curve = Map.get(map, p)
-
-    # IO.inspect({p, {dy, dx}}, label: "normal before at point")
 
     case curve do
       "|" ->
@@ -484,8 +602,6 @@ L7II||IIFJ
           {0, -1} -> {-1, 0}
         end
     end
-
-    # |> IO.inspect(label: "normal after")
   end
 
   def derive_s({y, x}, {y1, x1}, {y2, x2}) do
