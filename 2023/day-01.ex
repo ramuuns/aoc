@@ -72,7 +72,7 @@ zoneight234
   def create_num_inner([ch | rest], num, _) when ch >= "0" and ch <= "9" and num >= 0,
     do: create_num_inner(rest, num, String.to_integer(ch))
 
-  def create_num_inner([ch | rest], a, b) do
+  def create_num_inner([_ | rest], a, b) do
     create_num_inner(rest, a, b)
   end
 
@@ -128,5 +128,5 @@ zoneight234
       when ch >= 48 and ch <= 57 and num >= 0,
       do: create_num_p2_inner(rest, num, ch - 48)
 
-  def create_num_p2_inner(<<ch::utf8, rest::binary>>, a, b), do: create_num_p2_inner(rest, a, b)
+  def create_num_p2_inner(<<_::utf8, rest::binary>>, a, b), do: create_num_p2_inner(rest, a, b)
 end

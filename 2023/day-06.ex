@@ -60,10 +60,17 @@ Distance:  9  40  200"
     win_count(data)
   end
 
+
+  def win_count_qe({time, distance}) do
+    min = ceil( ( - time + :math.sqrt( IO.inspect(time*time) - 4*distance ) )/-2)
+    max = floor(( - time - :math.sqrt( time*time - 4*distance ) )/-2)
+    max - min + 1
+  end
+
   def win_count({time, distance}) do
     min = wc_min({time, distance}, 0, div(time, 2))
     max = wc_max({time, distance}, 0, div(time, 2))
-    max - (min - 1)
+    max - min + 1
   end
 
   def wc_min({time, distance}, min, _)

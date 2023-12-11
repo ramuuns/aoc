@@ -68,8 +68,8 @@ defmodule Day11 do
   def part1({y_set, x_set, galaxies, {max_y, max_x}}) do
     galaxies =
       galaxies
-      |> expand_y(y_set, max_y, 1)
-      |> expand_x(x_set, max_x, 1)
+      |> expand(y_set, max_y, 1, {1, 0})
+      |> expand(x_set, max_x, 1, {0, 1})
 
     md_sum(galaxies, 0)
   end
@@ -77,55 +77,40 @@ defmodule Day11 do
   def part2({y_set, x_set, galaxies, {max_y, max_x}}) do
     galaxies =
       galaxies
-      |> expand_y(y_set, max_y, 1_000_000 - 1)
-      |> expand_x(x_set, max_x, 1_000_000 - 1)
+      |> expand(y_set, max_y, 1_000_000 - 1, {1, 0})
+      |> expand(x_set, max_x, 1_000_000 - 1, {0, 1})
 
     md_sum(galaxies, 0)
   end
 
-  def expand_y(galaxies, y_set, max_y, amount) do
-    max_y..0
-    |> Enum.reduce(
-      galaxies,
-      fn y, galaxies ->
-        if MapSet.member?(y_set, y) do
-          galaxies
-        else
-          galaxies
-          |> Enum.map(fn
-            {gy, x} ->
-              if gy > y do
-                {gy + amount, x}
-              else
-                {gy, x}
-              end
-          end)
-        end
-      end
-    )
+  def expand(galaxies, _, 0, _, _), do: galaxies
+
+  def expand(galaxies, set, coord, amount, vec) do
+    if MapSet.member?(set, coord) do
+      galaxies
+      |> expand(set, coord - 1, amount, vec)
+    else
+      galaxies
+      |> expand_galaxy([], coord, amount, vec)
+      |> expand(set, coord - 1, amount, vec)
+    end
   end
 
-  def expand_x(galaxies, x_set, max_x, amount) do
-    max_x..0
-    |> Enum.reduce(
-      galaxies,
-      fn x, galaxies ->
-        if MapSet.member?(x_set, x) do
-          galaxies
-        else
-          galaxies
-          |> Enum.map(fn
-            {y, gx} ->
-              if gx > x do
-                {y, gx + amount}
-              else
-                {y, gx}
-              end
-          end)
-        end
-      end
-    )
-  end
+  def expand_galaxy([], expanded, _, _, _), do: expanded
+
+  def expand_galaxy([{gy, gx} | rest], expanded, coord, amount, {y, x})
+      when coord * y <= gy and coord * x <= gx,
+      do:
+        expand_galaxy(
+          rest,
+          [{gy + y * amount, gx + x * amount} | expanded],
+          coord,
+          amount,
+          {y, x}
+        )
+
+  def expand_galaxy([g | rest], expanded, coord, amount, vec),
+    do: expand_galaxy(rest, [g | expanded], coord, amount, vec)
 
   def md_sum([], sum), do: sum
 
