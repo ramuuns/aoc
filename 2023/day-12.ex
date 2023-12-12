@@ -70,11 +70,17 @@ defmodule Day12 do
   end
 
   def part1(data) do
-    data |> Enum.map(&valid_count/1) |> Enum.sum()
+    data 
+    |> Task.async_stream(&valid_count/1)
+    |> Enum.map(fn {:ok, res} -> res end)
+    |> Enum.sum()
   end
 
   def part2(data) do
-    data |> Enum.map(&valid_count/1) |> Enum.sum()
+    data 
+    |> Task.async_stream(&valid_count/1) 
+    |> Enum.map(fn {:ok, res} -> res end)
+    |> Enum.sum()
   end
 
   def valid_count({groups, sizes}) do
