@@ -1,4 +1,5 @@
 defmodule Day13 do
+  import Bitwise
   def run(mode) do
     data = read_input(mode)
 
@@ -46,17 +47,17 @@ defmodule Day13 do
     prepare_data_inner(data, [{[], []}])
   end
 
-  def prepare_data_inner([], blocks), do: blocks
+  def prepare_data_inner([], [{rows, cols} | blocks]), do: [{rows, cols |> Enum.map(fn col -> row_to_number(col, 0) end)} | blocks]
 
-  def prepare_data_inner(["" | rest], blocks), do: prepare_data_inner(rest, [{[], []} | blocks])
+  def prepare_data_inner(["" | rest], [{rows, cols} | blocks]), do: prepare_data_inner(rest, [{[], []}, {rows, cols |> Enum.map(fn col -> row_to_number(col, 0) end)} | blocks])
 
   def prepare_data_inner([row | rest], [{[], []} | blocks]) do
-    prepare_data_inner(rest, [{[row], row |> String.split("", trim: true)} | blocks])
+    prepare_data_inner(rest, [{[row |> row_to_number(0)], row |> String.split("", trim: true)} | blocks])
   end
 
   def prepare_data_inner([row | rest], [{rows, cols} | blocks]) do
     prepare_data_inner(rest, [
-      {[row | rows],
+      {[row |> row_to_number(0) | rows],
        cols
        |> Enum.zip(row |> String.split("", trim: true))
        |> Enum.map(fn {col, ch} -> "#{col}#{ch}" end)}
@@ -64,24 +65,34 @@ defmodule Day13 do
     ])
   end
 
+  def row_to_number("", num), do: num
+  def row_to_number("#" <> s, num), do: row_to_number(s, (num <<< 1) + 1)
+  def row_to_number("." <> s, num), do: row_to_number(s, num <<< 1)
+
   def part1(data) do
     data
-    |> Enum.map(fn {rows, cols} ->
-      r_sym = symetry(rows |> Enum.reverse(), [], 0)
+    |> Enum.reduce(0, fn {rows, cols}, sum ->
       c_sym = symetry(cols, [], 0)
-      c_sym + 100 * r_sym
+      r_sym = if c_sym == 0 do
+        symetry(rows |> Enum.reverse(), [], 0)
+      else
+        0
+      end
+      sum + (c_sym + 100 * r_sym)
     end)
-    |> Enum.sum()
   end
 
   def part2(data) do
     data
-    |> Enum.map(fn {rows, cols} ->
-      r_sym = symetry_one_change(rows |> Enum.reverse(), [], 0)
+    |> Enum.reduce(0, fn {rows, cols}, sum ->
       c_sym = symetry_one_change(cols, [], 0)
-      c_sym + 100 * r_sym
+      r_sym = if c_sym == 0 do
+        symetry_one_change(rows |> Enum.reverse(), [], 0)
+      else
+        0
+      end
+      sum + (c_sym + 100 * r_sym)
     end)
-    |> Enum.sum()
   end
 
   def symetry([], _, _), do: 0
@@ -134,6 +145,14 @@ defmodule Day13 do
     else
       false
     end
+  end
+
+  def count_bits(0, count), do: count
+  def count_bits(num, cnt), do: count_bits(num >>> 1, cnt + (num &&& 1))
+
+  def delta_is_one(a, b) when is_integer(a) and is_integer(b) do
+    d = bxor(a,b)
+    count_bits(d, 0) == 1
   end
 
   def delta_is_one(a, b) do

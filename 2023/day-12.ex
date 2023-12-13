@@ -1,4 +1,6 @@
 defmodule Day12 do
+  import Bitwise
+
   def run(mode) do
     data = read_input(mode, 1)
     data2 = read_input(mode, 2)
@@ -66,8 +68,19 @@ defmodule Day12 do
   end
 
   def to_groups(string) do
-    string |> String.split(~r"\.+", trim: true)
+    string
+    |> String.split(~r"\.+", trim: true)
+    |> Enum.map(fn group ->
+      group |> String.split("", trim: true) |> Enum.reverse() |> to_group_inner(0, 0)
+    end)
   end
+
+  def to_group_inner([], group, size), do: {group, size}
+
+  def to_group_inner(["#" | rest], group, size),
+    do: to_group_inner(rest, (group <<< 1) + 1, size + 1)
+
+  def to_group_inner(["?" | rest], group, size), do: to_group_inner(rest, group <<< 1, size + 1)
 
   def part1(data) do
     data
@@ -86,100 +99,150 @@ defmodule Day12 do
   def valid_count({groups, sizes}) do
     # {groups, sizes} |> IO.inspect()
     # |> IO.inspect()
-    {ret, _} = count_try_placing(groups, sizes, Map.new())
-    ret
+    count_try_placing(
+      groups,
+      sizes,
+      groups |> Enum.reduce(Enum.count(groups) - 1, fn {_, size}, acc -> acc + size end),
+      (sizes |> Enum.sum()) + Enum.count(sizes) - 1
+    )
   end
 
-  def count_try_placing(groups, [], res_map) do
+  def count_try_placing(groups, [], _, _) do
     res =
-      if groups |> Enum.join("") |> String.contains?("#") do
+      if groups |> Enum.any?(fn {group, _} -> group > 0 end) do
         0
       else
         1
       end
 
-    {res, res_map |> Map.put({groups, []}, res)}
+    Process.put({groups, []}, res)
+    res
   end
 
-  def count_try_placing([], [_ | _] = sizes, res_map), do: {0, res_map |> Map.put({[], sizes}, 0)}
+  def count_try_placing([], [_ | _] = sizes, _, _) do
+    Process.put({[], sizes}, 0)
+    0
+  end
 
-  def count_try_placing([group | groups] = all_groups, [size | sizes] = all_sizes, res_map) do
-    group_length = String.length(group)
-
-    {ret, res_map} =
+  def count_try_placing(
+        [{group, group_size} | groups] = all_groups,
+        [size | sizes] = all_sizes,
+        group_size_sum,
+        rem_size_sum
+      ) do
+    ret =
       cond do
-        size < group_length ->
-          rest_group = group |> String.slice(size, 1000)
+        rem_size_sum > group_size_sum ->
+          0
 
-          {cnt, res_map} =
-            if rest_group |> String.starts_with?("#") do
-              # bad bad bad, guess we cannot place it at the start
-              {0, res_map}
-            else
+        size < group_size ->
+          rest_group = group >>> size
+          rest_group_size = group_size - size
+
+          cnt =
+            case rest_group &&& 1 do
+              1 ->
+                0
+
+              0 ->
+                map_key =
+                  {next_groups, next_sizes} = {
+                    if rest_group_size == 1 do
+                      groups
+                    else
+                      [{rest_group >>> 1, rest_group_size - 1} | groups]
+                    end,
+                    sizes
+                  }
+
+                # alright, let's try placing the next size at whatever is left of this group
+                if cnt = Process.get(map_key) do
+                  cnt
+                else
+                  count_try_placing(
+                    next_groups,
+                    next_sizes,
+                    if rest_group_size == 1 do
+                      group_size_sum - group_size - 1
+                    else
+                      group_size_sum - size - 1
+                    end,
+                    rem_size_sum - size - 1
+                  )
+                end
+            end
+
+          case group &&& 1 do
+            1 ->
+              cnt
+
+            0 ->
+              # the above either worked or it did not, but we can now try shrinking the group and trying this same thing again
               map_key =
-                {next_groups, next_sizes} =
-                {[rest_group |> String.slice(1, 1000) | groups], sizes}
+                {next_groups, next_sizes} = {
+                  if group_size == 1 do
+                    groups
+                  else
+                    [{group >>> 1, group_size - 1} | groups]
+                  end,
+                  all_sizes
+                }
 
-              # alright, let's try placing the next size at whatever is left of this group
-              if Map.has_key?(res_map, map_key) do
-                {Map.get(res_map, map_key), res_map}
+              if c1 = Process.get(map_key) do
+                c1 + cnt
               else
-                count_try_placing(next_groups, next_sizes, res_map)
+                count_try_placing(
+                  next_groups,
+                  next_sizes,
+                  if group_size == 1 do
+                    group_size_sum - group_size - 1
+                  else
+                    group_size_sum - 1
+                  end,
+                  rem_size_sum
+                ) + cnt
               end
-            end
-
-          # cnt |> IO.inspect()
-
-          if group |> String.slice(0, size) |> String.starts_with?("#") do
-            {cnt, res_map}
-          else
-            # the above either worked or it did not, but we can now try shrinking the group and trying this same thing again
-            map_key =
-              {next_groups, next_sizes} = {[group |> String.slice(1, 1000) | groups], all_sizes}
-
-            if Map.has_key?(res_map, map_key) do
-              {Map.get(res_map, map_key) + cnt, res_map}
-            else
-              {c1, res_map} =
-                count_try_placing(next_groups, next_sizes, res_map)
-
-              {c1 + cnt, res_map}
-            end
           end
 
-        size == group_length ->
+        size == group_size ->
           # hell yeah, this size is just the entirety of this group, moving on
-          {cnt, res_map} =
-            if Map.has_key?(res_map, {groups, sizes}) do
-              {Map.get(res_map, {groups, sizes}), res_map}
+          cnt =
+            if c1 = Process.get({groups, sizes}) do
+              c1
             else
-              count_try_placing(groups, sizes, res_map)
+              count_try_placing(
+                groups,
+                sizes,
+                group_size_sum - group_size - 1,
+                rem_size_sum - size - 1
+              )
             end
 
-          if group |> String.contains?("#") do
-            {cnt, res_map}
+          if group > 0 do
+            cnt
           else
-            if Map.has_key?(res_map, {groups, all_sizes}) do
-              {cnt + Map.get(res_map, {groups, all_sizes}), res_map}
+            if c1 = Process.get({groups, all_sizes}) do
+              c1 + cnt
             else
-              {c1, res_map} = count_try_placing(groups, all_sizes, res_map)
-              {c1 + cnt, res_map}
+              count_try_placing(groups, all_sizes, group_size_sum - group_size - 1, rem_size_sum) +
+                cnt
             end
           end
 
-        group |> String.contains?("#") ->
-          {0, res_map}
+        group > 0 ->
+          0
 
         true ->
           # try placing the size in the next group
-          if Map.has_key?(res_map, {groups, all_sizes}) do
-            {Map.get(res_map, {groups, all_sizes}), res_map}
+          if c1 = Process.get({groups, all_sizes}) do
+            c1
           else
-            count_try_placing(groups, all_sizes, res_map)
+            count_try_placing(groups, all_sizes, group_size_sum - group_size - 1, rem_size_sum)
           end
       end
 
-    #   {all_groups, all_sizes, ret} |> IO.inspect()
-    {ret, res_map |> Map.put({all_groups, all_sizes}, ret)}
+    Process.put({all_groups, all_sizes}, ret)
+    # IO.inspect({all_groups, all_sizes, group_size_sum, rem_size_sum, ret}) 
+    ret
   end
 end
