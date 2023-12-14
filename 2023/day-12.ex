@@ -1,4 +1,5 @@
 defmodule Day12 do
+  Code.compile_file("priority_queue.ex")
   import Bitwise
 
   def run(mode) do
@@ -86,6 +87,7 @@ defmodule Day12 do
     data
     |> Task.async_stream(&valid_count/1)
     |> Enum.map(fn {:ok, res} -> res end)
+    # |> Enum.map(&valid_count/1)
     |> Enum.sum()
   end
 
@@ -94,17 +96,167 @@ defmodule Day12 do
     |> Task.async_stream(&valid_count/1)
     |> Enum.map(fn {:ok, res} -> res end)
     |> Enum.sum()
+
+    # 1
   end
 
   def valid_count({groups, sizes}) do
     # {groups, sizes} |> IO.inspect()
     # |> IO.inspect()
-    count_try_placing(
-      groups,
-      sizes,
-      groups |> Enum.reduce(Enum.count(groups) - 1, fn {_, size}, acc -> acc + size end),
-      (sizes |> Enum.sum()) + Enum.count(sizes) - 1
-    )
+    # count_try_placing(
+    #  groups,
+    #  sizes,
+    #  groups |> Enum.reduce(Enum.count(groups) - 1, fn {_, size}, acc -> acc + size end),
+    #  (sizes |> Enum.sum()) + Enum.count(sizes) - 1
+    # )
+    group_size_sum =
+      groups |> Enum.reduce(Enum.count(groups) - 1, fn {_, size}, acc -> acc + size end)
+
+    size_sum = (sizes |> Enum.sum()) + Enum.count(sizes) - 1
+
+    cnt =
+      count_try_iter(
+        PriorityQueue.new()
+        |> PriorityQueue.add(-size_sum, {groups, sizes, group_size_sum, size_sum}),
+        Map.new([
+          {
+            group_size_sum * 1000 + size_sum,
+            1
+          }
+        ]),
+        0
+      )
+
+    # |>IO.inspect(label: "res")
+    cnt
+  end
+
+  def count_try_iter({nil, _}, _, count), do: count
+
+  def count_try_iter(
+        pq,
+        seen,
+        count
+      ) do
+    {item, pq} = PriorityQueue.pop_next(pq)
+
+    case item do
+      {groups, [], gc, sc} ->
+        res =
+          if groups |> Enum.any?(fn {group, _} -> group > 0 end) do
+            0
+          else
+            Map.get(seen, gc * 1000 + sc)
+          end
+
+        count_try_iter(pq, seen, count + res)
+
+      {[{group, group_size} | groups] = all_groups, [size | sizes] = all_sizes, group_size_sum,
+       rem_size_sum} ->
+        # item |> IO.inspect(label: "start")
+
+        next =
+          cond do
+            size < group_size ->
+              rest_group = group >>> size
+              rest_group_size = group_size - size
+
+              next =
+                case rest_group &&& 1 do
+                  1 ->
+                    []
+
+                  0 ->
+                    {next_group, next_group_size} =
+                      if rest_group_size == 1 do
+                        {groups, group_size_sum - group_size - 1}
+                      else
+                        {[{rest_group >>> 1, rest_group_size - 1} | groups],
+                         group_size_sum - size - 1}
+                      end
+
+                    [
+                      {
+                        next_group,
+                        sizes,
+                        next_group_size,
+                        rem_size_sum - size - 1
+                      }
+                    ]
+                end
+
+              case group &&& 1 do
+                1 ->
+                  next
+
+                0 ->
+                  {next_group, next_group_size} =
+                    if group_size == 1 do
+                      {groups, group_size_sum - group_size - 1}
+                    else
+                      {[{group >>> 1, group_size - 1} | groups], group_size_sum - 1}
+                    end
+
+                  [
+                    {
+                      next_group,
+                      all_sizes,
+                      next_group_size,
+                      rem_size_sum
+                    }
+                    | next
+                  ]
+              end
+
+            size == group_size ->
+              # hell yeah, this size is just the entirety of this group, moving on
+              next = [
+                {groups, sizes, group_size_sum - group_size - 1, rem_size_sum - size - 1}
+              ]
+
+              if group > 0 do
+                next
+              else
+                [
+                  {groups, all_sizes, group_size_sum - group_size - 1, rem_size_sum}
+                  | next
+                ]
+              end
+
+            group > 0 ->
+              []
+
+            true ->
+              [{groups, all_sizes, group_size_sum - group_size - 1, rem_size_sum}]
+          end
+
+        filtered_next =
+          next
+          |> Enum.filter(fn {_, _, group_size, rem_size} ->
+            group_size >= rem_size and not Map.has_key?(seen, group_size * 1000 + rem_size)
+          end)
+
+        seen =
+          next
+          |> Enum.reduce(seen, fn {_, _, group_size, rem_size}, seen ->
+            k = group_size * 1000 + rem_size
+
+            seen
+            |> Map.put(
+              k,
+              Map.get(seen, k, 0) + Map.get(seen, group_size_sum * 1000 + rem_size_sum)
+            )
+          end)
+
+        # next |> IO.inspect(label: "adding")
+        pq =
+          filtered_next
+          |> Enum.reduce(pq, fn {_, _, gsize, size} = item, pq ->
+            pq |> PriorityQueue.add(-size - gsize, item)
+          end)
+
+        count_try_iter(pq, seen, count)
+    end
   end
 
   def count_try_placing(groups, [], _, _) do
