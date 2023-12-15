@@ -45,7 +45,12 @@ O.#..O.#.#
     do: {cols |> Enum.map(fn col -> col |> Enum.reverse() end), row_count}
 
   def make_columns([row | rest], [], 0),
-    do: make_columns(rest, row |> String.split("", trim: true) |> Enum.map(fn c -> [c] end), 1)
+    do:
+      make_columns(
+        rest,
+        row |> String.split("", trim: true) |> Enum.map(fn <<c::utf8>> -> [c] end),
+        1
+      )
 
   def make_columns([row | rest], cols, cnt),
     do:
@@ -53,7 +58,7 @@ O.#..O.#.#
         rest,
         cols
         |> Enum.zip(row |> String.split("", trim: true))
-        |> Enum.map(fn {col, c} -> [c | col] end),
+        |> Enum.map(fn {col, <<c::utf8>>} -> [c | col] end),
         cnt + 1
       )
 
@@ -95,17 +100,17 @@ O.#..O.#.#
   end
 
   def mrtt_arr([], rocks, dots, res), do: [rocks ++ dots | res] |> add_hashes([])
-  def mrtt_arr(["#" | rest], [], [], res), do: mrtt_arr(rest, [], [], [[] | res])
-  def mrtt_arr(["#" | rest], rocks, [], res), do: mrtt_arr(rest, [], [], [rocks | res])
-  def mrtt_arr(["#" | rest], [], dots, res), do: mrtt_arr(rest, [], [], [dots | res])
-  def mrtt_arr(["#" | rest], rocks, dots, res), do: mrtt_arr(rest, [], [], [rocks ++ dots | res])
-  def mrtt_arr(["." | rest], rocks, dots, res), do: mrtt_arr(rest, rocks, ["." | dots], res)
-  def mrtt_arr(["O" | rest], rocks, dots, res), do: mrtt_arr(rest, ["O" | rocks], dots, res)
+  def mrtt_arr([?# | rest], [], [], res), do: mrtt_arr(rest, [], [], [[] | res])
+  def mrtt_arr([?# | rest], rocks, [], res), do: mrtt_arr(rest, [], [], [rocks | res])
+  def mrtt_arr([?# | rest], [], dots, res), do: mrtt_arr(rest, [], [], [dots | res])
+  def mrtt_arr([?# | rest], rocks, dots, res), do: mrtt_arr(rest, [], [], [rocks ++ dots | res])
+  def mrtt_arr([?. | rest], rocks, dots, res), do: mrtt_arr(rest, rocks, [?. | dots], res)
+  def mrtt_arr([?O | rest], rocks, dots, res), do: mrtt_arr(rest, [?O | rocks], dots, res)
 
   def add_hashes([], res), do: res
   def add_hashes([rocks_dots], res), do: add_hashes([], rocks_dots ++ res)
-  def add_hashes([[] | rest], res), do: add_hashes(rest, ["#" | res])
-  def add_hashes([rocks_dots | rest], res), do: add_hashes(rest, ["#" | rocks_dots ++ res])
+  def add_hashes([[] | rest], res), do: add_hashes(rest, [?# | res])
+  def add_hashes([rocks_dots | rest], res), do: add_hashes(rest, [?# | rocks_dots ++ res])
 
   def move_rocks_to_top(str) do
     if res = Process.get(str) do
@@ -131,7 +136,7 @@ O.#..O.#.#
   def col_load(<<_::utf8, rest::binary>>, col, load), do: col_load(rest, col - 1, load)
 
   def col_load([], _, load), do: load
-  def col_load(["O" | rest], col, load), do: col_load(rest, col - 1, load + col)
+  def col_load([?O | rest], col, load), do: col_load(rest, col - 1, load + col)
   def col_load([_ | rest], col, load), do: col_load(rest, col - 1, load)
 
   def part2({cols, cnt}) do
@@ -181,14 +186,8 @@ O.#..O.#.#
 
   def prepend([], [], res), do: res |> Enum.reverse()
 
-  def prepend([col | rest], ["." | row_rest], res),
-    do: prepend(rest, row_rest, [["." | col] | res])
-
-  def prepend([col | rest], ["#" | row_rest], res),
-    do: prepend(rest, row_rest, [["#" | col] | res])
-
-  def prepend([col | rest], ["O" | row_rest], res),
-    do: prepend(rest, row_rest, [["O" | col] | res])
+  def prepend([col | rest], [a | row_rest], res),
+    do: prepend(rest, row_rest, [[a | col] | res])
 
   def reverse_join([], res), do: res
   def reverse_join([col | rest], cols), do: reverse_join(rest, [col | cols])
