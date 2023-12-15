@@ -41,10 +41,11 @@ O.#..O.#.#
     data |> make_columns([], 0)
   end
 
-  def make_columns([], cols, row_count), do: {cols, row_count}
+  def make_columns([], cols, row_count),
+    do: {cols |> Enum.map(fn col -> col |> Enum.reverse() end), row_count}
 
   def make_columns([row | rest], [], 0),
-    do: make_columns(rest, row |> String.split("", trim: true), 1)
+    do: make_columns(rest, row |> String.split("", trim: true) |> Enum.map(fn c -> [c] end), 1)
 
   def make_columns([row | rest], cols, cnt),
     do:
@@ -52,7 +53,7 @@ O.#..O.#.#
         rest,
         cols
         |> Enum.zip(row |> String.split("", trim: true))
-        |> Enum.map(fn {col, c} -> "#{col}#{c}" end),
+        |> Enum.map(fn {col, c} -> [c | col] end),
         cnt + 1
       )
 
@@ -65,21 +66,60 @@ O.#..O.#.#
   def tilt_north([], tilted), do: tilted
   def tilt_north([col | rest], tilted), do: tilt_north(rest, [tilt(col) | tilted])
 
-  def tilt(col) do
-    col
-    |> String.split("#")
-    |> Enum.map(&move_rocks_to_top/1)
-    |> Enum.join("#")
+  def tilt(col) when is_binary(col) do
+    if res = Process.get(col) do
+      res
+    else
+      res =
+        col
+        |> String.split("#")
+        |> Enum.map(&move_rocks_to_top/1)
+        |> Enum.join("#")
+
+      Process.put(col, res)
+      res
+    end
   end
 
-  def move_rocks_to_top(""), do: ""
+  def tilt(col) do
+    if res = Process.get(col) do
+      res
+    else
+      res =
+        col
+        |> mrtt_arr([], [], [])
+
+      Process.put(col, res)
+      res
+    end
+  end
+
+  def mrtt_arr([], rocks, dots, res), do: [rocks ++ dots | res] |> add_hashes([])
+  def mrtt_arr(["#" | rest], [], [], res), do: mrtt_arr(rest, [], [], [[] | res])
+  def mrtt_arr(["#" | rest], rocks, [], res), do: mrtt_arr(rest, [], [], [rocks | res])
+  def mrtt_arr(["#" | rest], [], dots, res), do: mrtt_arr(rest, [], [], [dots | res])
+  def mrtt_arr(["#" | rest], rocks, dots, res), do: mrtt_arr(rest, [], [], [rocks ++ dots | res])
+  def mrtt_arr(["." | rest], rocks, dots, res), do: mrtt_arr(rest, rocks, ["." | dots], res)
+  def mrtt_arr(["O" | rest], rocks, dots, res), do: mrtt_arr(rest, ["O" | rocks], dots, res)
+
+  def add_hashes([], res), do: res
+  def add_hashes([rocks_dots], res), do: add_hashes([], rocks_dots ++ res)
+  def add_hashes([[] | rest], res), do: add_hashes(rest, ["#" | res])
+  def add_hashes([rocks_dots | rest], res), do: add_hashes(rest, ["#" | rocks_dots ++ res])
 
   def move_rocks_to_top(str) do
-    length = String.length(str)
-
-    rocks =
-      str |> String.split(".", trim: true) |> Enum.join("") |> String.pad_trailing(length, ".")
+    if res = Process.get(str) do
+      res
+    else
+      res = str |> rocks_dots([], [])
+      Process.put(str, res)
+      res
+    end
   end
+
+  def rocks_dots("", rocks, dots), do: (rocks |> Enum.join("")) <> (dots |> Enum.join(""))
+  def rocks_dots("O" <> rest, rocks, dots), do: rocks_dots(rest, ["O" | rocks], dots)
+  def rocks_dots("." <> rest, rocks, dots), do: rocks_dots(rest, rocks, ["." | dots])
 
   def count_load([], _, load), do: load
 
@@ -89,6 +129,10 @@ O.#..O.#.#
   def col_load("", _, load), do: load
   def col_load("O" <> rest, col, load), do: col_load(rest, col - 1, load + col)
   def col_load(<<_::utf8, rest::binary>>, col, load), do: col_load(rest, col - 1, load)
+
+  def col_load([], _, load), do: load
+  def col_load(["O" | rest], col, load), do: col_load(rest, col - 1, load + col)
+  def col_load([_ | rest], col, load), do: col_load(rest, col - 1, load)
 
   def part2({cols, cnt}) do
     {cycle_start, cycle_length, states} = run_cycle_until_cycle(cols, %{}, %{}, 0)
@@ -125,17 +169,29 @@ O.#..O.#.#
     |> rotate([])
   end
 
-  def rotate([], res), do: res |> Enum.reverse()
-  def rotate([row | rest], []), do: rotate(rest, row |> String.split("", trim: true))
+  def rotate([], res), do: res |> reverse_join([])
+  def rotate([row | rest], []), do: rotate(rest, row |> Enum.map(fn s -> [s] end))
 
   def rotate([row | rest], cols),
     do:
       rotate(
         rest,
-        cols
-        |> Enum.zip(row |> String.split("", trim: true))
-        |> Enum.map(fn {col, c} -> "#{c}#{col}" end)
+        cols |> prepend(row, [])
       )
+
+  def prepend([], [], res), do: res |> Enum.reverse()
+
+  def prepend([col | rest], ["." | row_rest], res),
+    do: prepend(rest, row_rest, [["." | col] | res])
+
+  def prepend([col | rest], ["#" | row_rest], res),
+    do: prepend(rest, row_rest, [["#" | col] | res])
+
+  def prepend([col | rest], ["O" | row_rest], res),
+    do: prepend(rest, row_rest, [["O" | col] | res])
+
+  def reverse_join([], res), do: res
+  def reverse_join([col | rest], cols), do: reverse_join(rest, [col | cols])
 
   def print_cols(cols) do
     cols |> rotate([]) |> Enum.join("\n") |> IO.puts()
