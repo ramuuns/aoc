@@ -114,8 +114,26 @@ defmodule Day16 do
     beam_path(next ++ rest, grid, visited, seen)
   end
 
+  def print_grid(visited) do
+    0..109
+    |> Enum.map(fn y ->
+      0..109
+      |> Enum.map(fn x ->
+        if MapSet.member?(visited, {y, x}) do
+          "#"
+        else
+          "."
+        end
+      end)
+      |> Enum.join("")
+    end)
+    |> Enum.join("\n")
+    |> IO.puts()
+  end
 
-  def beam_path_pp([], _, visited, seen), do: visited |> MapSet.size()
+  def beam_path_pp([], _, visited, _seen) do
+    MapSet.new(visited) |> MapSet.size()
+  end
 
   def beam_path_pp([{y, x, dir} | rest], grid, visited, seen) do
     next = Map.get(grid, {y, x}) |> Map.get(dir)
@@ -133,7 +151,7 @@ defmodule Day16 do
         |> Enum.reduce(
           visited,
           fn {_, coords}, visited ->
-            coords |> Enum.reduce(visited, fn c, visited -> visited |> MapSet.put(c) end)
+            coords ++ visited
           end
         )
 
@@ -146,33 +164,34 @@ defmodule Day16 do
 
     0..max_yx
     |> Enum.map(fn xy ->
-      [
+      vals = [
         beam_path_pp(
           [{xy, 0, :right}],
           data_processed,
-          MapSet.new([{xy, 0}]),
+          [{xy, 0}],
           MapSet.new([{xy, 0, :right}])
         ),
         beam_path_pp(
           [{xy, max_yx, :left}],
           data_processed,
-          MapSet.new([{xy, max_yx}]),
+          [{xy, max_yx}],
           MapSet.new([{xy, max_yx, :left}])
         ),
         beam_path_pp(
           [{0, xy, :down}],
           data_processed,
-          MapSet.new([{0, xy}]),
+          [{0, xy}],
           MapSet.new([{0, xy, :down}])
         ),
         beam_path_pp(
           [{max_yx, xy, :up}],
           data_processed,
-          MapSet.new([{max_yx, xy}]),
+          [{max_yx, xy}],
           MapSet.new([{max_yx, xy, :up}])
         )
       ]
-      |> Enum.max()
+
+      vals |> Enum.max()
     end)
     |> Enum.max()
   end
@@ -296,9 +315,28 @@ defmodule Day16 do
           (c == ?| and (dir == :up or dir == :down)) ->
         go_straight({y + dy, x + dx}, dir, grid, coords)
 
+      c == ?/ ->
+        next_dir = new_dir(?/, dir)
+        {dy, dx} = dir_c(next_dir)
+
+        if not Map.has_key?(grid, {y + dy, x + dx}) do
+          {{y, x, dir}, coords}
+        else
+          go_straight({y + dy, x + dx}, next_dir, grid, coords)
+        end
+
+      c == ?\\ ->
+        next_dir = new_dir(?\\, dir)
+        {dy, dx} = dir_c(next_dir)
+
+        if not Map.has_key?(grid, {y + dy, x + dx}) do
+          {{y, x, dir}, coords}
+        else
+          go_straight({y + dy, x + dx}, next_dir, grid, coords)
+        end
+
       true ->
         {{y, x, dir}, coords}
     end
   end
-
 end
