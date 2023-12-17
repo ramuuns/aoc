@@ -80,43 +80,65 @@ defmodule Day17 do
     if {y, x} == tgt do
       heat_loss
     else
-      k = map_key({y, x}, dir, moves_this_dir)
-      is_member = Map.has_key?(grid_min, k)
+      # k = map_key({y, x}, dir, moves_this_dir)
+      # is_member = Map.has_key?(grid_min, k)
 
-      if is_member do
-        path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
-      else
-        grid_min = Map.put(grid_min, k, 1)
+      # if is_member do
+      #  path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
+      # else
+      #  grid_min = Map.put(grid_min, k, 1)
 
-        next =
-          [{1, 0}, {-1, 0}, {0, 1}, {0, -1}]
-          |> do_filter([], dir, y, x, moves_this_dir, min, max, maxy, maxx)
+      next =
+        [{1, 0}, {-1, 0}, {0, 1}, {0, -1}]
+        |> do_filter([], dir, y, x, moves_this_dir, min, max, maxy, maxx)
 
-        pq =
-          next
-          |> Enum.reduce(pq, fn
-            {ndy, ndx} = nd, pq ->
-              p = {y + ndy, x + ndx}
+      {pq, grid_min} =
+        next
+        |> Enum.reduce({pq, grid_min}, fn
+          {ndy, ndx} = nd, {pq, grid_min} ->
+            p = {y + ndy, x + ndx}
 
-              mc =
-                if nd == dir do
-                  moves_this_dir + 1
+            mc =
+              if nd == dir do
+                moves_this_dir + 1
+              else
+                1
+              end
+
+            hl = heat_loss + Map.get(grid, p)
+
+            k = map_key(p, nd, mc)
+
+            if not Map.has_key?(grid_min, k) or hl < Map.get(grid_min, k) do
+              dist = md(p, tgt)
+
+              heur =
+                if dist > 20 do
+                  dist * 2
                 else
-                  1
+                  0
                 end
 
-              hl = heat_loss + Map.get(grid, p)
+              {
+                pq
+                |> PriorityQueue.add(
+                  hl + heur,
+                  {p, hl, nd, mc}
+                ),
+                grid_min |> Map.put(k, hl)
+              }
+            else
+              {pq, grid_min}
+            end
+        end)
 
-              pq
-              |> PriorityQueue.add(
-                hl,
-                {p, hl, nd, mc}
-              )
-          end)
-
-        path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
-      end
+      path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
+      # end
     end
+  end
+
+  def md({y, x}, {y1, x1}) do
+    abs(y - y1) + abs(x - x1)
   end
 
   def part2({grid, max_yx}) do
