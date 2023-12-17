@@ -56,212 +56,113 @@ defmodule Day17 do
 
   def part1({grid, max_yx}, _) do
     path_with_min_heat_loss(
-      PriorityQueue.new() |> PriorityQueue.add(0, {{0, 0}, 0, [{0, 0}], MapSet.new([{0, 0}])}),
+      PriorityQueue.new()
+      |> PriorityQueue.add(0, {{1, 0}, Map.get(grid, {1, 0}), {1, 0}, 1})
+      |> PriorityQueue.add(0, {{0, 1}, Map.get(grid, {0, 1}), {0, 1}, 1}),
       grid,
-      Map.new([{{0, 0}, 0}]),
-      {max_yx, max_yx}
+      %{},
+      {max_yx, max_yx},
+      0,
+      3
     )
   end
 
-  def path_with_min_heat_loss(pq, grid, grid_min, tgt) do
-    {{{y, x}, heat_loss, path, seen}, pq} = pq |> PriorityQueue.pop_next()
+  def path_with_min_heat_loss(
+        pq,
+        grid,
+        grid_min,
+        {maxy, maxx} = tgt,
+        min,
+        max
+      ) do
+    {{{y, x}, heat_loss, dir, moves_this_dir}, pq} = pq |> PriorityQueue.pop_next()
 
     if {y, x} == tgt do
       heat_loss
     else
-      next =
-        [{y + 1, x}, {y - 1, x}, {y, x + 1}, {y, x - 1}]
-        |> Enum.filter(fn c -> Map.has_key?(grid, c) and not MapSet.member?(seen, c) end)
+      k = map_key({y, x}, dir, moves_this_dir)
+      is_member = Map.has_key?(grid_min, k)
 
-      next =
-        case path do
-          [_, {py, px} | _] ->
-            next |> Enum.filter(fn c -> c != {py, px} end)
+      if is_member do
+        path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
+      else
+        grid_min = Map.put(grid_min, k, 1)
 
-          _ ->
-            next
-        end
+        next =
+          [{1, 0}, {-1, 0}, {0, 1}, {0, -1}]
+          |> do_filter([], dir, y, x, moves_this_dir, min, max, maxy, maxx)
 
-      next =
-        case path do
-          [{y, _}, {y, _}, {y, _}, {y, _} | _] -> next |> Enum.filter(fn {ny, _} -> ny != y end)
-          [{_, x}, {_, x}, {_, x}, {_, x} | _] -> next |> Enum.filter(fn {_, nx} -> nx != x end)
-          _ -> next
-        end
+        pq =
+          next
+          |> Enum.reduce(pq, fn
+            {ndy, ndx} = nd, pq ->
+              p = {y + ndy, x + ndx}
 
-      next =
-        next
-        |> Enum.filter(fn {ny, nx} = p ->
-          dir = {y - ny, x - nx}
-          mc = pl(p, path)
+              mc =
+                if nd == dir do
+                  moves_this_dir + 1
+                else
+                  1
+                end
 
-          Map.get(grid_min, {p, dir, mc}, 1_000_000_000) > heat_loss + Map.get(grid, p)
-        end)
+              hl = heat_loss + Map.get(grid, p)
 
-      {pq, grid_min} =
-        next
-        |> Enum.reduce({pq, grid_min}, fn
-          {ny, nx} = p, {pq, grid_min} ->
-            dir = {y - ny, x - nx}
-            mc = pl(p, path)
-            hl = heat_loss + Map.get(grid, p)
-
-            {
               pq
               |> PriorityQueue.add(
-                hl + 1 * md(p, tgt),
-                {p, hl, [p | path], seen |> MapSet.put(p)}
-              ),
-              grid_min |> Map.put({p, dir, mc}, hl)
-            }
-        end)
+                hl,
+                {p, hl, nd, mc}
+              )
+          end)
 
-      path_with_min_heat_loss(pq, grid, grid_min, tgt)
+        path_with_min_heat_loss(pq, grid, grid_min, tgt, min, max)
+      end
     end
-  end
-
-  def md({y1, x1}, {y2, x2}) do
-    abs(y1 - y2) + abs(x1 - x2)
   end
 
   def part2({grid, max_yx}) do
-    path_with_min_heat_loss_ultra(
-      PriorityQueue.new() |> PriorityQueue.add(0, {{0, 0}, 0, [{0, 0}], MapSet.new([{0, 0}])}),
+    path_with_min_heat_loss(
+      PriorityQueue.new()
+      |> PriorityQueue.add(0, {{1, 0}, Map.get(grid, {1, 0}), {1, 0}, 1})
+      |> PriorityQueue.add(0, {{0, 1}, Map.get(grid, {0, 1}), {0, 1}, 1}),
       grid,
-      Map.new([{{0, 0}, 0}]),
-      {max_yx, max_yx}
+      %{},
+      {max_yx, max_yx},
+      4,
+      10
     )
   end
 
-  def path_with_min_heat_loss_ultra(pq, grid, grid_min, tgt) do
-    {{{y, x}, heat_loss, path, seen}, pq} = pq |> PriorityQueue.pop_next()
+  def do_filter([], ret, _, _, _, _, _, _, _, _), do: ret
 
-    if {y, x} == tgt do
-      heat_loss
-    else
-      next =
-        [{y + 1, x}, {y - 1, x}, {y, x + 1}, {y, x - 1}]
-        |> Enum.filter(fn c -> Map.has_key?(grid, c) and not MapSet.member?(seen, c) end)
+  def do_filter([{ndy, ndx} | rest], ret, {dy, dx}, y, x, moves_this_dir, min, max, maxy, maxx)
+      when ndy == -dy and ndx == -dx,
+      do: do_filter(rest, ret, {dy, dx}, y, x, moves_this_dir, min, max, maxy, maxx)
 
-      next =
-        case path do
-          [_, {py, px} | _] ->
-            next |> Enum.filter(fn c -> c != {py, px} end)
+  def do_filter([dir | rest], ret, dir, y, x, moves_this_dir, min, max, maxy, maxx)
+      when moves_this_dir + 1 > max,
+      do: do_filter(rest, ret, dir, y, x, moves_this_dir, min, max, maxy, maxx)
 
-          _ ->
-            next
-        end
+  def do_filter([nd | rest], ret, dir, y, x, moves_this_dir, min, max, maxy, maxx)
+      when dir != nd and moves_this_dir < min,
+      do: do_filter(rest, ret, dir, y, x, moves_this_dir, min, max, maxy, maxx)
 
-      # enforce min 4
-      next =
-        case path do
-          [{y, _}, {y, _}, {y, _}, {y, _}, {y, _} | _] ->
-            next
+  def do_filter([{0, -1} | rest], ret, dir, y, 0, moves_this_dir, min, max, maxy, maxx),
+    do: do_filter(rest, ret, dir, y, 0, moves_this_dir, min, max, maxy, maxx)
 
-          [{_, x}, {_, x}, {_, x}, {_, x}, {_, x} | _] ->
-            next
+  def do_filter([{-1, 0} | rest], ret, dir, 0, x, moves_this_dir, min, max, maxy, maxx),
+    do: do_filter(rest, ret, dir, 0, x, moves_this_dir, min, max, maxy, maxx)
 
-          [{0, 0}] ->
-            next
+  def do_filter([{1, 0} | rest], ret, dir, y, x, moves_this_dir, min, max, y, maxx),
+    do: do_filter(rest, ret, dir, y, x, moves_this_dir, min, max, y, maxx)
 
-          [_, {py, px} | _] ->
-            next
-            |> Enum.filter(fn {ny, nx} ->
-              ny - y == y - py and nx - x == x - px
-            end)
-        end
+  def do_filter([{0, 1} | rest], ret, dir, y, x, moves_this_dir, min, max, maxy, x),
+    do: do_filter(rest, ret, dir, y, x, moves_this_dir, min, max, maxy, x)
 
-      # enforce max 10
-      next =
-        case path do
-          [
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _},
-            {y, _} | _
-          ] ->
-            next |> Enum.filter(fn {ny, _} -> ny != y end)
+  def do_filter([nd | rest], ret, dir, y, x, moves_this_dir, min, max, maxy, maxx),
+    do: do_filter(rest, [nd | ret], dir, y, x, moves_this_dir, min, max, maxy, maxx)
 
-          [
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x},
-            {_, x} | _
-          ] ->
-            next |> Enum.filter(fn {_, nx} -> nx != x end)
-
-          _ ->
-            next
-        end
-
-      next =
-        next
-        |> Enum.filter(fn {ny, nx} = p ->
-          dir = {y - ny, x - nx}
-          mc = pl(p, path)
-
-          Map.get(grid_min, {p, dir, mc}, 1_000_000_000) > heat_loss + Map.get(grid, p)
-        end)
-
-      {pq, grid_min} =
-        next
-        |> Enum.reduce({pq, grid_min}, fn
-          {ny, nx} = p, {pq, grid_min} ->
-            dir = {y - ny, x - nx}
-            mc = pl(p, path)
-            hl = heat_loss + Map.get(grid, p)
-
-            {
-              pq
-              |> PriorityQueue.add(
-                hl + 3 * md(p, tgt),
-                {p, hl, [p | path], seen |> MapSet.put(p)}
-              ),
-              grid_min |> Map.put({p, dir, mc}, hl)
-            }
-        end)
-
-      path_with_min_heat_loss_ultra(pq, grid, grid_min, tgt)
-    end
-  end
-
-  def pl({ny, nx}, path) do
-    case path do
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 10
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 10
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 9
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 9
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 8
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 8
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 7
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] ->  7
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 6
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 6
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 5
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 5
-      [{^ny, _}, {^ny, _}, {^ny, _}, {^ny, _} | _] -> 4
-      [{_, ^nx}, {_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 4
-      [{^ny, _}, {^ny, _}, {^ny, _} | _] -> 3
-      [{_, ^nx}, {_, ^nx}, {_, ^nx} | _] -> 3
-      [{^ny, _}, {^ny, _} | _] -> 2
-      [{_, ^nx}, {_, ^nx} | _] -> 2
-      [{^ny, _} | _] -> 1
-      [{_, ^nx} | _] -> 1
-      _ -> 0
-    end
-  end
+  def map_key({y, x}, {1, 0}, c), do: c + y * 10 + x * 10000
+  def map_key({y, x}, {-1, 0}, c), do: c - y * 10 + x * 10000
+  def map_key({y, x}, {0, 1}, c), do: c + y * 10 - x * 10000
+  def map_key({y, x}, {0, -1}, c), do: c - y * 10 - x * 10000
 end
