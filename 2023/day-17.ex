@@ -109,7 +109,7 @@ defmodule Day17 do
             {
               pq
               |> PriorityQueue.add(
-                hl + 0 * md(p, tgt),
+                hl + 1 * md(p, tgt),
                 {p, hl, [p | path], seen |> MapSet.put(p)}
               ),
               grid_min |> Map.put({p, dir, mc}, hl)
@@ -228,7 +228,7 @@ defmodule Day17 do
             {
               pq
               |> PriorityQueue.add(
-                hl + 0 * md(p, tgt),
+                hl + 3 * md(p, tgt),
                 {p, hl, [p | path], seen |> MapSet.put(p)}
               ),
               grid_min |> Map.put({p, dir, mc}, hl)
