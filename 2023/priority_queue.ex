@@ -36,7 +36,12 @@ defmodule PriorityQueue do
 
     case rest_values do
       [] ->
-        {value, {rest_prios, values |> Map.delete(min_prio)}}
+        case rest_prios do
+          [] -> 
+            {value, {nil, %{}}}
+          _ ->
+            {value, {rest_prios, values |> Map.delete(min_prio)}}
+          end
 
       _ ->
         {value, {prios, values |> Map.put(min_prio, rest_values)}}
