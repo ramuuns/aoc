@@ -84,77 +84,118 @@ hdj{m>838:A,pv}
         res
       end
 
-      func2 = fn {x, m, a, s} ->
+      func2 =
         case condition do
           "x>" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x |> Enum.filter(fn x -> x > val end), m, a, s},
-              {x |> Enum.filter(fn x -> x <= val end), m, a, s}
-            }
+            fn {x, m, a, s} ->
+              {xt, xf} = filter_into(x, fn x -> x > val end, [], [])
+
+              {
+                {xt, m, a, s},
+                {xf, m, a, s}
+              }
+            end
 
           "x<" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x |> Enum.filter(fn x -> x < val end), m, a, s},
-              {x |> Enum.filter(fn x -> x >= val end), m, a, s}
-            }
+            fn {x, m, a, s} ->
+              {xt, xf} = filter_into(x, fn x -> x < val end, [], [])
+
+              {
+                {xt, m, a, s},
+                {xf, m, a, s}
+              }
+            end
 
           "m>" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m |> Enum.filter(fn m -> m > val end), a, s},
-              {x, m |> Enum.filter(fn m -> m <= val end), a, s}
-            }
+            fn {x, m, a, s} ->
+              {mt, mf} = filter_into(m, fn m -> m > val end, [], [])
+
+              {
+                {x, mt, a, s},
+                {x, mf, a, s}
+              }
+            end
 
           "m<" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m |> Enum.filter(fn m -> m < val end), a, s},
-              {x, m |> Enum.filter(fn m -> m >= val end), a, s}
-            }
+            fn {x, m, a, s} ->
+              {mt, mf} = filter_into(m, fn m -> m < val end, [], [])
+
+              {
+                {x, mt, a, s},
+                {x, mf, a, s}
+              }
+            end
 
           "a>" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m, a |> Enum.filter(fn a -> a > val end), s},
-              {x, m, a |> Enum.filter(fn a -> a <= val end), s}
-            }
+            fn {x, m, a, s} ->
+              {at, af} = filter_into(a, fn a -> a > val end, [], [])
+
+              {
+                {x, m, at, s},
+                {x, m, af, s}
+              }
+            end
 
           "a<" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m, a |> Enum.filter(fn a -> a < val end), s},
-              {x, m, a |> Enum.filter(fn a -> a >= val end), s}
-            }
+            fn {x, m, a, s} ->
+              {at, af} = filter_into(a, fn a -> a < val end, [], [])
+
+              {
+                {x, m, at, s},
+                {x, m, af, s}
+              }
+            end
 
           "s>" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m, a, s |> Enum.filter(fn s -> s > val end)},
-              {x, m, a, s |> Enum.filter(fn s -> s <= val end)}
-            }
+            fn {x, m, a, s} ->
+              {st, sf} = filter_into(s, fn s -> s > val end, [], [])
+
+              {
+                {x, m, a, st},
+                {x, m, a, sf}
+              }
+            end
 
           "s<" <> val ->
             val = val |> String.to_integer()
 
-            {
-              {x, m, a, s |> Enum.filter(fn s -> s < val end)},
-              {x, m, a, s |> Enum.filter(fn s -> s >= val end)}
-            }
+            fn {x, m, a, s} ->
+              {st, sf} = filter_into(s, fn s -> s < val end, [], [])
+
+              {
+                {x, m, a, st},
+                {x, m, a, sf}
+              }
+            end
         end
-      end
 
       {func, value, func2}
     else
       rule |> String.to_atom()
+    end
+  end
+
+  def filter_into([], _, t, f), do: {t, f}
+
+  def filter_into([num | rest], func, t, f) do
+    if func.(num) do
+      filter_into(rest, func, [num | t], f)
+    else
+      filter_into(rest, func, t, [num | f])
     end
   end
 
@@ -193,7 +234,8 @@ hdj{m>838:A,pv}
   end
 
   def part2({rules, _parts}) do
-    {1..4000, 1..4000, 1..4000, 1..4000}
+    {1..4000 |> Enum.to_list(), 1..4000 |> Enum.to_list(), 1..4000 |> Enum.to_list(),
+     1..4000 |> Enum.to_list()}
     |> count_accepted(rules, :in)
   end
 
