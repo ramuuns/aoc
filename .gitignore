@@ -4,4 +4,8 @@
 !2018/*.rs
 !2018/input*
 2022/COOKIE
+2024/COOKIE
+bazel-*
+__pycache__
+*.lock
 *.swp
