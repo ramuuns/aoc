@@ -7,29 +7,19 @@ def parse_data(data):
     return [list(map(int, row.split())) for row in data.strip().split("\n")]
 
 def part1(data):
-    safe_count = 0
-    for row in data:
-        if safe(row):
-            safe_count = safe_count + 1
-    return safe_count
+    return sum(1 if safe(row) else 0 for row in data)
 
 def part2(data):
-    safe_count = 0
-    for row in data:
-        if damp_safe(row):
-            safe_count = safe_count + 1
-    return safe_count
+    return sum(1 if damp_safe(row) else 0 for row in data)
 
 def safe(arr):
     is_increasing = arr[-1] > arr[0]
-    unsafe = False
     p = arr[0]
     for el in arr[1:]:
         if (is_increasing and el <= p) or (not is_increasing and el >= p) or abs(el - p) > 3:
-            unsafe = True
-            break
+            return False
         p = el
-    return not unsafe
+    return True
 
 def damp_safe(arr):
     if safe(arr):
