@@ -22,10 +22,6 @@ def safe(arr):
     return True
 
 def damp_safe(arr):
-    if safe(arr):
-        return True
-    if safe(arr[1:]):
-        return True
     return damp_safe_inner(arr) or damp_safe_inner(arr[::-1])
 
 def damp_safe_inner(arr):
