@@ -1,5 +1,5 @@
 import re
-from collections import defaultdict
+from collections import Counter
 
 def run(data):
     data = parse_data(data)
@@ -25,20 +25,14 @@ def part1(data):
     left.sort()
     right.sort()
     dist = 0
-    for lr in zip(left, right):
-        match lr:
-            case (left, right):
-                dist = dist + abs(left - right)
-            case _:
-                print("matched nothingu")
+    for (l,r) in zip(left, right):
+        dist = dist + abs(l - r)
     return dist
 
 def part2(data):
     left = data[0]
     right = data[1]
-    r_dict = defaultdict(int)
-    for d in right:
-        r_dict[d] = r_dict[d] + 1
+    r_dict = Counter(right)
     similarity = 0
     for l in left:
         similarity = similarity + l * r_dict[l]
