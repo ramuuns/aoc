@@ -25,7 +25,7 @@ def damp_safe(arr):
     return damp_safe_inner(arr) or damp_safe_inner(arr[::-1])
 
 def damp_safe_inner(arr):
-    is_increasing = arr[-1] > arr[0]
+    is_increasing = arr[1] > arr[0]
     dampened = False
     p = arr[0]
     for el in arr[1:]:
@@ -51,3 +51,7 @@ def test():
     assert damp_safe([1,5,6,7,8]), "should be safe"
     assert damp_safe([93, 90, 92, 90, 89, 87, 84, 81]), "should be safe"
     assert damp_safe([14, 13, 11, 12, 8]), "should also be safe"
+    assert damp_safe([1000, 1, 2, 3, 4, 5]), "tricks for increasing"
+    assert damp_safe([5, 4,  2, 1, 1000]), "tricks for increasing 2"
+    assert damp_safe([5, 7, 2]), "tricks for increasing 3"
+
