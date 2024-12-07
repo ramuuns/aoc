@@ -37,10 +37,12 @@ def matches(val, items):
            
 
 def sum_or_mul(res, items, val):
+    if res > val:
+        return False
     if items == []:
          return res == val
     a = items[0]
-    return sum_or_mul(res + a, items[1:], val) + sum_or_mul(res * a, items[1:], val)
+    return sum_or_mul(res * a, items[1:], val) + sum_or_mul(res + a, items[1:], val)
 
 
 
@@ -71,11 +73,15 @@ def joinnum(a,b):
     return a * 10**d + b
 
 def sum_or_mul_funky(res, items, val):
+    if res > val:
+        return False
     if items == []:
          return res == val
     a = items[0]
     rest = items[1:]
-    return sum_or_mul_funky(res + a, rest, val) or sum_or_mul_funky(res * a, rest, val) or sum_or_mul_funky(joinnum(res,a), rest, val) 
+    return (sum_or_mul_funky(joinnum(res,a), rest, val) or 
+            sum_or_mul_funky(res * a, rest, val) or 
+            sum_or_mul_funky(res + a, rest, val) )
 
 def test():
     test_data = """190: 10 19
