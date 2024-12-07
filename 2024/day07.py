@@ -1,7 +1,11 @@
+import time
 
 def run(data):
+    start = time.monotonic()
     data = parse_data(data)
-    return (part1(data), part2(data))
+    r = (part1(data), part2(data))
+    print(f"took: {time.monotonic() - start}s")
+    return r
 
 def parse_data(data):
     def parse_line(line):
@@ -29,14 +33,14 @@ def matches(val, items):
             if val == a+b or val == a*b:
                 return True
         case _:
-            return val in sum_or_mul(items[0], items[1:], [])
+            return sum_or_mul(items[0], items[1:], val)
            
 
-def sum_or_mul(res, items, ret):
+def sum_or_mul(res, items, val):
     if items == []:
-         return ret + [res]
+         return res == val
     a = items[0]
-    return sum_or_mul(res + a, items[1:], ret) + sum_or_mul(res * a, items[1:], ret)
+    return sum_or_mul(res + a, items[1:], val) + sum_or_mul(res * a, items[1:], val)
 
 
 
@@ -60,13 +64,18 @@ def matches2(val, items):
             if val == a+b or val == a*b or f"{val}" == f"{a}{b}":
                 return True
         case _:
-            return val in sum_or_mul_funky(items[0], items[1:], [])
+            return sum_or_mul_funky(items[0], items[1:], val) 
 
-def sum_or_mul_funky(res, items, ret):
+def joinnum(a,b):
+    d = len(str(b))
+    return a * 10**d + b
+
+def sum_or_mul_funky(res, items, val):
     if items == []:
-         return ret + [res]
+         return res == val
     a = items[0]
-    return sum_or_mul_funky(res + a, items[1:], ret) + sum_or_mul_funky(res * a, items[1:], ret) + sum_or_mul_funky(int(f"{res}{a}"), items[1:], ret) 
+    rest = items[1:]
+    return sum_or_mul_funky(res + a, rest, val) or sum_or_mul_funky(res * a, rest, val) or sum_or_mul_funky(joinnum(res,a), rest, val) 
 
 def test():
     test_data = """190: 10 19
