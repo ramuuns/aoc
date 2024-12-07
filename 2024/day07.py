@@ -66,22 +66,26 @@ def matches2(val, items):
             if val == a+b or val == a*b or f"{val}" == f"{a}{b}":
                 return True
         case _:
-            return sum_or_mul_funky(items[0], items[1:], val) 
+            return sum_or_mul_funky(items[-1], items, len(items) - 2,  val) 
 
 def joinnum(a,b):
     d = len(str(b))
     return a * 10**d + b
 
-def sum_or_mul_funky(res, items, val):
-    if res > val:
+def sum_or_mul_funky(res, items, idx, val):
+    if val < 0:
         return False
-    if items == []:
+    if idx == -1:
          return res == val
-    a = items[0]
-    rest = items[1:]
-    return (sum_or_mul_funky(joinnum(res,a), rest, val) or 
-            sum_or_mul_funky(res * a, rest, val) or 
-            sum_or_mul_funky(res + a, rest, val) )
+    def can_concat():
+        d = len(str(res))
+        return val % 10**d == res
+    def can_multiply():
+        return val % res == 0
+    a = items[idx]
+    return ( (can_concat() and sum_or_mul_funky(a, items, idx-1, val // 10**len(str(res)) )) or 
+            (can_multiply() and sum_or_mul_funky(a, items, idx-1, val // res)) or 
+            sum_or_mul_funky(a, items, idx-1, val - res) )
 
 def test():
     test_data = """190: 10 19
@@ -93,6 +97,7 @@ def test():
 192: 17 8 14
 21037: 9 7 18 13
 292: 11 6 16 20"""
-    assert matches(190, [10,19]), "come on"
+    assert matches2(190, [10,19]), "come on"
+    assert matches2(7290, [6,8,6,15]), "come on"
     assert part1(parse_data(test_data)) == 3749, "Should be 3749"
     assert part2(parse_data(test_data)) == 11387, "Should be 11387"
