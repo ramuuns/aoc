@@ -1,7 +1,8 @@
 
 def run(data):
-    data = parse_data(data)
-    return (part1(data), part2(data))
+    data1 = parse_data(data)
+    data2 = parse_data(data)
+    return (part1(data1), part2(data2))
 
 def parse_data(data):
     return data
