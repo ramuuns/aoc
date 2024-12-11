@@ -50,11 +50,11 @@ def part2(data):
     return sum(trail_scores)
 
 def get_trail_score_2(grid, start, d, target):
-    deq = deque([(start, {start})])
+    deq = deque([start])
     neighbors = [(1,0), (0,1), (-1,0), (0, -1)]
     score = 0
     while deq:
-        p, seen = deq.popleft()
+        p = deq.popleft()
         val = grid[p]
         if val == target:
             score += 1
@@ -62,10 +62,8 @@ def get_trail_score_2(grid, start, d, target):
         x,y = p
         for dx, dy in neighbors:
             np = (x+dx, y+dy)
-            if np not in seen and grid[np] - val == d:
-                seen1 = seen.copy()
-                seen1.add(np)
-                deq.append((np, seen1))
+            if grid[np] - val == d:
+                deq.append(np)
     return score
 
 def test():
