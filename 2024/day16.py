@@ -1,4 +1,5 @@
 from heapq import heappush, heappop
+from collections import deque
 
 def run(data):
     data1 = parse_data(data)
@@ -53,45 +54,57 @@ def min_score(start, end, grid):
     seen = {}
     direction = (1, 0)
     seen[(start, direction)] = 0
-    pq = [(0, (start, direction, {start,}))]
-    best_score_found = False
-    best_score = 0
-    best_path_points = set()
+    pq = [(0, (start, direction))]
     while True:
-        score, (p, d, path) = heappop(pq)
-        if best_score_found and score > best_score:
-            return best_score, best_path_points
+        score, (p, d) = heappop(pq)
         if p == end:
-            best_score_found = True
-            best_score = score
-            best_path_points = best_path_points.union(path)
-            continue
+            return score, seen
         if seen[(p,d)] < score:
             continue
         x, y = p
         dx, dy = d
-        if grid[(x+dx, y+dy)] == '.' and (((x+dx, y+dy), d) not in seen or seen[((x+dx, y+dy), d)] >= score + 1):
-            copy = path.copy()
-            copy.add((x+dx,y+dy))
-            heappush(pq, (score+1, ((x+dx,y+dy), d, copy )))
+        if grid[(x+dx, y+dy)] == '.' and (((x+dx, y+dy), d) not in seen or seen[((x+dx, y+dy), d)] > score + 1):
+            heappush(pq, (score+1, ((x+dx,y+dy), d )))
             seen[((x+dx, y+dy), d)] = score + 1
         left = rotate(d, True)
-        if (p, left) not in seen or seen[(p, left)] >= score + 1000:
-            heappush(pq, (score+1000, (p, left, path)))
+        if (p, left) not in seen or seen[(p, left)] > score + 1000:
+            heappush(pq, (score+1000, (p, left)))
             seen[(p,left)] = score + 1000
         right = rotate(d, False)
-        if (p, right) not in seen or seen[(p, right)] >= score + 1000:
-            heappush(pq, (score+1000, (p, right, path)))
+        if (p, right) not in seen or seen[(p, right)] > score + 1000:
+            heappush(pq, (score+1000, (p, right)))
             seen[(p,right)] = score + 1000
 
 
+def backtrack(best_score, start, end, seen):
+    path = {start,}
+    deq = deque([])
+    for (p, d) in seen.keys():
+        if p == start and seen[(p,d)] == best_score:
+            deq.append((p, d, best_score))
+    while deq:
+        p, d, s = deq.popleft()
+        if p == end:
+            continue
+        dx, dy = d
+        x, y = p
+        if ((x-dx, y-dy), d) in seen and seen[((x-dx, y-dy), d)] == s-1:
+            path.add((x-dx, y-dy))
+            deq.append(((x-dx, y-dy), d, s-1))
+        left = rotate(d, True)
+        if (p, left) in seen and seen[(p, left)] == s - 1000:
+            deq.append((p, left, s - 1000))
+        right = rotate(d, False)
+        if (p, right) in seen and seen[(p, right)] == s - 1000:
+            deq.append((p, right, s - 1000))
 
+    return len(path)
 
 
 def part2(data):
     start, end, grid = data
-    score, path = min_score(start,end,grid)
-    return len(path)
+    score, seen = min_score(start,end,grid)
+    return backtrack(score, end, start, seen)
 
 
 def test():
