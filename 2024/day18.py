@@ -52,7 +52,6 @@ def part2(data, is_test):
     for x in range(size):
         for y in range(size):
             grid[(x,y)] = '.'
-    s = 1
     best_path = {}
     for (x,y) in data:
         grid[(x,y)] = '#'
