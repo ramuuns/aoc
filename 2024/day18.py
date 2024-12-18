@@ -20,29 +20,29 @@ def part1(data, is_test):
             grid[(x,y)] = '.'
     for (x,y) in data[:max_items]:
         grid[(x,y)] = '#'
-    steps = astar_me(start, end, grid, 1)
+    steps, _ = astar_me(start, end, grid)
     return steps
 
 def md(x,y, tgt):
     tx,ty = tgt
     return abs(tx - x) + abs(ty - y)
 
-def astar_me(start, end, grid, sure):
-    pq = [(0, start, 0)]
+def astar_me(start, end, grid):
+    pq = [(0, start, 0, {start,})]
     seen = {}
     seen[start] = 0
     dirs = [(0,1), (1,0), (0,-1), (-1,0)]
     while len(pq):
-        _, p, steps = heappop(pq)
+        _, p, steps, path = heappop(pq)
         if p == end:
-            return steps
+            return steps, path
         x,y = p
         for d in dirs:
             dx, dy = d
             if grid[(x+dx, y+dy)] == '.' and ( (x+dx, y+dy) not in seen or seen[(x+dx, y+dy)] > steps + 1):
                 seen[(x+dx, y+dy)] = steps + 1
-                heappush(pq, (steps+1 - md(x+dx, y+dy, end)*sure, (x+dx, y+dy), steps+1))
-    return -1
+                heappush(pq, (steps+1 - md(x+dx, y+dy, end), (x+dx, y+dy), steps+1, path | {(x+dx, y+dy),}))
+    return -1, set()
 
 def part2(data, is_test):
     size = 7 if is_test else 71
@@ -52,11 +52,14 @@ def part2(data, is_test):
     for x in range(size):
         for y in range(size):
             grid[(x,y)] = '.'
+    s = 1
+    best_path = {}
     for (x,y) in data:
         grid[(x,y)] = '#'
-        steps = astar_me(start, end, grid, 1)
-        if steps == -1:
-            return f"{x},{y}"
+        if len(best_path) == 0 or (x,y) in best_path:
+            steps, best_path = astar_me(start, end, grid)
+            if steps == -1:
+                return f"{x},{y}"
     return 0
 
 
