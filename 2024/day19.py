@@ -1,3 +1,4 @@
+import re
 
 def run(data):
     data1 = parse_data(data)
@@ -10,16 +11,10 @@ def parse_data(data):
 
 def part1(data):
     towels, patterns = data
-    return sum([is_possible(pattern, towels) for pattern in patterns])
+    return sum([is_possible_re(pattern, towels) for pattern in patterns])
 
-def is_possible(pattern, towels):
-    if pattern in towels:
-        return 1
-    for towel in towels:
-        l = len(towel)
-        if pattern[:l] == towel and is_possible(pattern[l:], towels):
-            return 1
-    return 0
+def is_possible_re(pattern, towels):
+    return re.match(r"^(" + "|".join(towels) + ")+$" , pattern) != None
 
 cache = {}
 def arrangements(pattern, towels):
