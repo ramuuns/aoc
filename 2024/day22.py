@@ -1,3 +1,4 @@
+from collections import defaultdict
 
 def run(data):
     data1 = parse_data(data)
@@ -11,18 +12,10 @@ def part1(data):
     return sum([randomize(number, 2000) for number in data])
 
 def part2(data):
-    all_sequences = set()
-    seq_by_monkey = {}
-    for monkey, number in enumerate(data):
-        seq_by_monkey[monkey] = gen_sequences(number, 2000, all_sequences)
+    all_sequences = defaultdict(int)
     max_num = 0
-    for seq in all_sequences:
-        seq_sum = 0
-        for monkey in range(len(data)):
-            if seq in seq_by_monkey[monkey]:
-                seq_sum += seq_by_monkey[monkey][seq]
-        if seq_sum > max_num:
-            max_num = seq_sum
+    for monkey, number in enumerate(data):
+        max_num = gen_sequences(number, 2000, all_sequences, max_num)
     return max_num
 
 MAX_MASK = 16777216 - 1
@@ -35,9 +28,9 @@ def randomize(number, times):
         number = (number ^ (number << 11)) & MAX_MASK
     return number
 
-def gen_sequences(number, times, all_sequences):
+def gen_sequences(number, times, all_sequences, max_num):
     s1, s2, s3, s4 = (0, 0, 0, 0)
-    ret = {}
+    seen = set()
     i = 0
     while times > 0:
         i+=1
@@ -51,10 +44,12 @@ def gen_sequences(number, times, all_sequences):
         s2 = s1
         s1 = (number  % 10) - before
         if i > 3:
-            if (s4, s3, s2, s1) not in ret:
-                ret[(s4, s3, s2, s1)] = number % 10
-                all_sequences.add((s1,s2,s3,s4))
-    return ret
+            if (s4, s3, s2, s1) not in seen:
+                all_sequences[(s4, s3, s2, s1)] += number % 10
+                if all_sequences[(s4, s3, s2, s1)] > max_num:
+                    max_num = all_sequences[(s4, s3, s2, s1)]
+                seen.add((s4,s3,s2,s1))
+    return max_num
 
 def test():
     test_data = """1
