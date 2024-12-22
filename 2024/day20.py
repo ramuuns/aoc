@@ -58,8 +58,18 @@ def find_cheats_by_time(grid, path):
 
 def find_cheats_by_time_20(grid,path):
     cheats_by_time = defaultdict(int)
+    points = list(path.keys())
+    pd_points = defaultdict(lambda: defaultdict(list))
+    for i, p in enumerate(points[:-1]):
+        for p2 in points[i+1:]:
+            x1, y1 = p
+            x2, y2 = p2
+            md = abs(x2 - x1) + abs(y2 - y1)
+            pd_points[p][md].append(p2)
+            pd_points[p2][md].append(p)
     for p, t in path.items():
-        floodfill_cheats(p, 0, t, grid, path, cheats_by_time)
+        ff_cheats(p, path, cheats_by_time, pd_points)
+        #floodfill_cheats(p, 0, t, grid, path, cheats_by_time)
     return cheats_by_time
 
 def floodfill_cheats(s, dt, t, grid, path, cheats_by_time):
@@ -78,6 +88,14 @@ def floodfill_cheats(s, dt, t, grid, path, cheats_by_time):
                 heappush(deq, (dt+1, newp))
                 if grid[newp] == '.' and path[newp] > t+dt+1:
                     cheats_by_time[path[newp] - t - dt - 1] += 1
+
+def ff_cheats(s, path, cheats, points_map):
+    x,y = s
+    for d in range(1,21): 
+        for p in points_map[s][d]:
+            if path[s] + d < path[p]:
+                cheats[path[p] - path[s] - d] += 1
+
 
 
 def part2(data):
