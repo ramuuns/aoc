@@ -42,13 +42,14 @@ def gen_sequences(number, times, all_sequences, max_num):
         s4 = s3
         s3 = s2
         s2 = s1
-        s1 = (number  % 10) - before
+        s1 = (number  % 10) - before + 10
         if i > 3:
-            if (s4, s3, s2, s1) not in seen:
-                all_sequences[(s4, s3, s2, s1)] += number % 10
-                if all_sequences[(s4, s3, s2, s1)] > max_num:
-                    max_num = all_sequences[(s4, s3, s2, s1)]
-                seen.add((s4,s3,s2,s1))
+            seq = s1 | (s2 << 5) | (s3 << 10) | (s4 << 15)
+            if seq not in seen:
+                all_sequences[seq] += number % 10
+                if all_sequences[seq] > max_num:
+                    max_num = all_sequences[seq]
+                seen.add(seq)
     return max_num
 
 def test():
