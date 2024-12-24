@@ -85,19 +85,41 @@ def validate_and_swap(key, rules, swapped, xors, carries, ands):
         # all good
         return
     elif op == "XOR":
+        swap_a = None
+        swap_b = None
         if a == xors[kk] and b != carries[kk]:
-            s_rule = rules[b]
-            rules[b] = rules[carries[kk]]
-            rules[carries[kk]] = s_rule
-            swapped.add(b)
-            swapped.add(carries[kk])
+            swap_a = b
+            swap_b = carries[kk]
+        elif b == xors[kk] and a != carries[kk]:
+            swap_a = a
+            swap_b = carries[kk]
         elif a == carries[kk] and b != xors[kk]:
-            s_rule = rules[b]
-            rules[b] = rules[xors[kk]]
-            rules[xors[kk]] = s_rule
-            swapped.add(b)
-            swapped.add(xors[kk])
-        print(swapped)
+            swap_a = b
+            swap_b = xors[kk]
+        elif b == carries[kk] and a != xors[kk]:
+            swap_a = a
+            swap_b = xors[kk]
+        s_rule = rules[swap_a]
+        rules[swap_a] = rules[swap_b]
+        rules[swap_b] = s_rule
+        swapped.add(swap_a)
+        swapped.add(swap_b)
+        for x in carries.keys():
+            if carries[x] == swap_a:
+                carries[x] = swap_b
+            elif carries[x] == swap_b:
+                carries[x] = swap_a
+        for x in xors.keys():
+            if xors[x] == swap_a:
+                xors[x] = swap_b
+            elif xors[x] == swap_b:
+                xors[x] = swap_a
+        for x in ands.keys():
+            if ands[x] == swap_a:
+                ands[x] = swap_b
+            elif ands[x] == swap_b:
+                ands[x] = swap_a
+
     else:
         # need to find the correct xor rule and add it and this to swap
         s_to = None
@@ -137,8 +159,8 @@ def part2(data):
     carries = {}
     for zed in zeds:
         validate_and_swap(zed, rules, swapped, xors, carries, ands)
-        if len(swapped) == 8:
-            break
+        #if len(swapped) == 8:
+        #    break
     return ",".join(sorted(swapped))
 
 
