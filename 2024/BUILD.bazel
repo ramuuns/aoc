@@ -24,5 +24,5 @@ aoc_day("21")
 aoc_day("22")
 aoc_day("23")
 aoc_day("24")
-#aoc_day("25")
+aoc_day("25")
 
