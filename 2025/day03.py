@@ -33,15 +33,21 @@ def max_joltage_12(row):
     max_digits = [0,0,0,0,0,0,0,0,0,0,0,0]
     max_indexes = [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
     max_l = len(row)
+    s = 0
     for idx, n in enumerate(num_row):
+        if n == 9 and idx < max_l - max_indexes[0]:
+            s = s*10 + 9
+            max_digits = [0] * (len(max_digits) - 1)
+            max_indexes = max_indexes[1:]
+            if len(max_indexes) == 0:
+                break
+            continue
+
         for k, d in enumerate(max_digits):
             if n > d and idx < max_l - max_indexes[k]:
                 max_digits[k] = n
-                for dx in range(k+1, 12):
-                    max_digits[dx] = 0
-
+                max_digits[k+1:] = [0] * (len(max_digits) - k - 1)
                 break
-    s = 0
     for d in max_digits:
         s = s*10 + d
     return s
