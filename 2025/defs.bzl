@@ -14,7 +14,7 @@ def aoc_day(day, fetch_input = True):
           name = "day_runner_{}".format(day),
           outs = ["day_runner_{}.py".format(day)],
           cmd = """
-              echo "module = __import__(\\\"day{}\\\")\nf = open(\\\"input-{}.in\\\",\\\"r\\\")\ndata = f.read().rstrip()\np1,p2 = module.run(data)\nprint(p1)\nprint(p2)\n" > "$@"
+              echo "module = __import__(\\\"day{}\\\")\nf = open(\\\"input-{}.in\\\",\\\"r\\\")\ndata = f.read().rstrip(\\\"\\\\n\\\")\np1,p2 = module.run(data)\nprint(p1)\nprint(p2)\n" > "$@"
           """.format(day, day)
       )
     else:
