@@ -18,9 +18,18 @@ def distance(a,b):
 
 def part1(data, max_conn=1000):
     pairs = []
+    cutoff = 0
+    has_cutoff = False
     for i, a in enumerate(data):
         for b in data[i+1:]:
-            pairs.append((a,b, distance(a,b)))
+            d = distance(a,b)
+            if not has_cutoff or d < cutoff:
+                pairs.append((a,b,d))
+        if not has_cutoff and len(pairs) > max_conn * 25:
+            pairs.sort(reverse=False, key=sortfunc)
+            _a, _b, cutoff = pairs[max_conn]
+            pairs = pairs[:max_conn+1]
+            has_cutoff = True
     pairs.sort(reverse=False, key=sortfunc)
     circuits = {}
     for a,b,d in pairs[:max_conn]:
@@ -46,16 +55,26 @@ def part1(data, max_conn=1000):
     uc_list.sort(reverse=True, key=len)
     return len(uc_list[0]) * len(uc_list[1]) * len(uc_list[2])
 
-def part2(data):
+def part2(data, max_conn=1000):
     max_size = len(data)
     pairs = []
+    cutoff = 0
+    has_cutoff = False
     for i, a in enumerate(data):
         for b in data[i+1:]:
-            pairs.append((a,b, distance(a,b)))
+            d = distance(a,b)
+            if not has_cutoff or d < cutoff:
+                pairs.append((a,b, d))
+        if not has_cutoff and len(pairs) > max_conn * 25:
+            pairs.sort(reverse=False, key=sortfunc)
+            _a, _b, cutoff = pairs[max_conn]
+            pairs = pairs[:max_conn+1]
+            has_cutoff = True
     pairs.sort(reverse=False, key=sortfunc)
     circuits = {}
     magic_num = 0
     for a,b,d in pairs:
+        i += 1
         circuit = set([a,b])
         if a in circuits and b in circuits:
             circuita = circuits[a]
