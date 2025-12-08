@@ -28,6 +28,8 @@ def part1(data, max_conn=1000):
         if a in circuits and b in circuits:
             circuita = circuits[a]
             circuitb = circuits[b]
+            if circuita == circuitb:
+                continue
             circuit = circuita.union(circuitb)
         elif a in circuits:
             circuit = circuits[a]
@@ -58,6 +60,8 @@ def part2(data):
         if a in circuits and b in circuits:
             circuita = circuits[a]
             circuitb = circuits[b]
+            if circuita == circuitb:
+                continue
             circuit = circuita.union(circuitb)
         elif a in circuits:
             circuit = circuits[a]
