@@ -135,20 +135,30 @@ def is_inside(edges, p1, p2, debug=False):
     return intersection_count % 2 == 1
 
 def part2(data):
+    def edgefunc(edge):
+        p1, p2 = edge
+        x1,y1 = p1
+        x2,y2 = p2
+        return abs(x1 - x2) + abs(y1 - y2)
+
     edges = [ (data[i-1], point) for i, point in enumerate(data)]
+    edges.sort(reverse=True, key=edgefunc)
     max_area = 0
+    pot_squares = []
     for i, a in enumerate(data):
         for b in data[i+1:]:
             x1,y1 = a
             x2,y2 = b
-            if is_inside(edges, a,b, (9,5) == a and (2,3) == b):
-                max_area = max(max_area, (abs(x2-x1)+1)*(abs(y2-y1)+1))
-                if (abs(x2-x1)+1)*(abs(y2-y1)+1) == 1691456895:
-                    is_inside(edges, a, b, True)
+            pot_squares.append(((abs(x2-x1)+1)*(abs(y2-y1)+1), a,b))
+
+    pot_squares.sort(reverse=True)
+    for area, a, b in pot_squares:
+        if is_inside(edges, a,b):
+            max_area = area
+            break
     assert max_area < 1691456895, "still too much"
     assert max_area < 4596179031, "this is too much"
     assert max_area < 4664572758, "this is too much"
-    print(max_area)
     return max_area
 
 
